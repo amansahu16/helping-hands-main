@@ -1,0 +1,74 @@
+// ─── STANDALONE / PUBLIC MODELS ─────────────────────────────
+
+model Location {
+  id        String        @id @default(uuid())
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  type      LocationType?
+
+  @@map("locations")
+}
+
+model Faq {
+  id       String  @id @default(uuid())
+  category String?
+  question String
+  answer   String
+
+  @@map("faqs")
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  content   String
+  rating    Int?     // 1–5
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("testimonials")
+}
+
+model Newsletter {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  subscribedAt DateTime @default(now()) @map("subscribed_at")
+
+  @@map("newsletters")
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_messages")
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+
+  @@map("system_settings")
+}
+
+model Complaint {
+  id          String   @id @default(uuid())
+  reporterId  String?  @map("reporter_id")
+  title       String
+  description String
+  targetType  String   // "USER", "NGO", "CAMPAIGN", "DONATION", "RESCUE"
+  targetId    String
+  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  reporter User? @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@map("complaints")
+}

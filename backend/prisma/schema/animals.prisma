@@ -1,0 +1,62 @@
+// ─── ANIMAL & ADOPTION ──────────────────────────────────────
+
+model Animal {
+  id             String        @id @default(uuid())
+  postedByUserId String?       @map("posted_by_user_id")
+  postedByNgoId  String?       @map("posted_by_ngo_id")
+  name           String?
+  category       String?
+  age            String?
+  location       String?
+  latitude       Float?
+  longitude      Float?
+  description    String?
+  photos         String[]      @default([])
+  status         AnimalStatus  @default(AVAILABLE)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  postedByUser User?      @relation("UserPostedAnimals", fields: [postedByUserId], references: [id], onDelete: SetNull)
+  postedByNgo  Ngo?       @relation("NgoPostedAnimals", fields: [postedByNgoId], references: [id], onDelete: SetNull)
+  adoptions    Adoption[]
+
+  @@map("animals")
+}
+
+model Adoption {
+  id        String         @id @default(uuid())
+  animalId  String         @map("animal_id")
+  adopterId String?        @map("adopter_id")
+  ngoId     String?        @map("ngo_id")
+  status    AdoptionStatus @default(IN_PROGRESS)
+  createdAt DateTime       @default(now()) @map("created_at") // ADDED
+  adoptedAt DateTime?      @map("adopted_at")
+
+  animal  Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  adopter User?  @relation(fields: [adopterId], references: [id], onDelete: SetNull)
+  ngo     Ngo?   @relation(fields: [ngoId], references: [id], onDelete: SetNull)
+
+  @@map("adoptions")
+}
+
+// ─── RESCUE ─────────────────────────────────────────────────
+
+model RescueRequest {
+  id             String       @id @default(uuid())
+  reporterId     String?      @map("reporter_id")
+  nearbyCenterId String?      @map("nearby_center_id")
+  animalType     String?      @map("animal_type")
+  location       String?
+  latitude       Float?
+  longitude      Float?
+  description    String?
+  condition      String?
+  photos         String[]     @default([])          // CHANGED: array of URLs
+  nearbyHospital String?      @map("nearby_hospital")
+  status         RescueStatus @default(OPEN)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  reporter     User? @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  nearbyCenter Ngo?  @relation(fields: [nearbyCenterId], references: [id], onDelete: SetNull)
+
+  @@map("rescue_requests")
+}

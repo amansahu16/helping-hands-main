@@ -1,0 +1,260 @@
+model Animal {
+  id             String   @id @default(uuid())
+  postedByUserId String?  @map("posted_by_user_id")
+  postedByNgoId  String?  @map("posted_by_ngo_id")
+  category       String?
+  location       String?
+  description    String?
+  photos         String?
+  status         String   @default("AVAILABLE")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  postedByUser User?      @relation("UserPostedAnimals", fields: [postedByUserId], references: [id], onDelete: SetNull)
+  postedByNgo  Ngo?       @relation("NgoPostedAnimals", fields: [postedByNgoId], references: [id], onDelete: SetNull)
+  adoptions    Adoption[]
+
+  @@map("animals")
+}
+
+model RescueRequest {
+  id             String   @id @default(uuid())
+  reporterId     String?  @map("reporter_id")
+  nearbyCenterId String?  @map("nearby_center_id")
+  location       String?
+  description    String?
+  condition      String?
+  photos         String?
+  nearbyHospital String?  @map("nearby_hospital")
+  status         String   @default("OPEN")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  reporter     User? @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  nearbyCenter Ngo?  @relation(fields: [nearbyCenterId], references: [id], onDelete: SetNull)
+
+  @@map("rescue_requests")
+}
+
+model Adoption {
+  id        String    @id @default(uuid())
+  animalId  String    @map("animal_id")
+  adopterId String?   @map("adopter_id")
+  ngoId     String?   @map("ngo_id")
+  status    String    @default("IN_PROGRESS")
+  adoptedAt DateTime? @map("adopted_at")
+
+  animal  Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  adopter User?  @relation(fields: [adopterId], references: [id], onDelete: SetNull)
+  ngo     Ngo?   @relation(fields: [ngoId], references: [id], onDelete: SetNull)
+
+  @@map("adoptions")
+}
+
+model Campaign {
+  id                  String    @id @default(uuid())
+  organizerUserId     String?   @map("organizer_user_id")
+  organizerNgoId      String?   @map("organizer_ngo_id")
+  name                String
+  description         String?
+  location            String?
+  timeFrom            DateTime? @map("time_from")
+  timeTo              DateTime? @map("time_to")
+  maxParticipants     Int?      @map("max_participants")
+  currentParticipants Int       @default(0) @map("current_participants")
+  status              String    @default("PLANNED")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  organizerUser User?                 @relation("UserOrganizedCampaigns", fields: [organizerUserId], references: [id], onDelete: SetNull)
+  organizerNgo  Ngo?                  @relation("NgoOrganizedCampaigns", fields: [organizerNgoId], references: [id], onDelete: SetNull)
+  participants  CampaignParticipant[]
+
+  @@map("campaigns")
+}
+
+model CampaignParticipant {
+  id             String   @id @default(uuid())
+  campaignId     String   @map("campaign_id")
+  userId         String   @map("user_id")
+  identityNumber String?  @map("identity_number")
+  status         String   @default("REGISTERED")
+  joinedAt       DateTime @default(now()) @map("joined_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("campaign_participants")
+}
+
+model Donation {
+  id             String    @id @default(uuid())
+  donorId        String?   @map("donor_id")
+  recipientNgoId String?   @map("recipient_ngo_id")
+  category       String?
+  quantity       Int?
+  personsServed  Int?      @map("persons_served")
+  location       String?
+  pickupAddress  String?   @map("pickup_address")
+  timeFrom       DateTime? @map("time_from")
+  timeTo         DateTime? @map("time_to")
+  photos         String?
+  status         String    @default("PENDING")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  donor        User?          @relation(fields: [donorId], references: [id], onDelete: SetNull)
+  recipientNgo Ngo?           @relation(fields: [recipientNgoId], references: [id], onDelete: SetNull)
+  items        DonationItem[]
+
+  @@map("donations")
+}
+
+model DonationItem {
+  id          String  @id @default(uuid())
+  donationId  String  @map("donation_id")
+  itemType    String? @map("item_type")
+  description String?
+  quantity    Int?
+
+  donation Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+
+  @@map("donation_items")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model NgoPost {
+  id          String   @id @default(uuid())
+  ngoId       String   @map("ngo_id")
+  postType    String?  @map("post_type")
+  title       String
+  description String?
+  location    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ngo Ngo @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  @@map("ngo_posts")
+}
+
+model Contributor {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  ngoId            String   @map("ngo_id")
+  contributionType String?  @map("contribution_type")
+  location         String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ngo  Ngo  @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  @@map("contributors")
+}
+
+model Location {
+  id        String  @id @default(uuid())
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  type      String?
+
+  @@map("locations")
+}
+
+model Faq {
+  id       String  @id @default(uuid())
+  category String?
+  question String
+  answer   String
+
+  @@map("faqs")
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  content   String
+  rating    Int?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("testimonials")
+}
+
+model Newsletter {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  subscribedAt DateTime @default(now()) @map("subscribed_at")
+
+  @@map("newsletters")
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_messages")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  phoneNumber  String?   @map("phone_number")
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  location     String?
+  occupation   String?
+  photoUrl     String?   @map("photo_url")
+  passwordHash String    @map("password_hash")
+  otpVerified  Boolean   @default(false) @map("otp_verified")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations (Prisma requires you to define the back-relation on the parent)
+  donations          Donation[]
+  animalsPosted      Animal[]              @relation("UserPostedAnimals")
+  rescueRequests     RescueRequest[]
+  adoptions          Adoption[]
+  campaignsOrganized Campaign[]            @relation("UserOrganizedCampaigns")
+  campaignsJoined    CampaignParticipant[]
+  contributions      Contributor[]
+  testimonials       Testimonial[]
+
+  @@map("users")
+}
+
+model Ngo {
+  id                 String   @id @default(uuid())
+  name               String
+  email              String   @unique
+  phoneNumber        String?  @map("phone_number")
+  registrationNumber String?  @unique @map("registration_number")
+  location           String?
+  photoUrl           String?  @map("photo_url")
+  passwordHash       String   @map("password_hash")
+  otpVerified        Boolean  @default(false) @map("otp_verified")
+  verified           Boolean  @default(false)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Relations
+  donationsReceived    Donation[]
+  animalsPosted        Animal[]        @relation("NgoPostedAnimals")
+  rescueRequestsNearby RescueRequest[]
+  adoptions            Adoption[]
+  campaignsOrganized   Campaign[]      @relation("NgoOrganizedCampaigns")
+  posts                NgoPost[]
+  contributors         Contributor[]
+
+  @@map("ngos")
+}

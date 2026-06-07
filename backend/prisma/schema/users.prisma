@@ -1,0 +1,65 @@
+// ─── CORE MODELS ────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  phoneNumber  String?   @map("phone_number")
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  location     String?
+  occupation   String?
+  photoUrl     String?   @map("photo_url")
+  latitude     Float?
+  longitude    Float?
+  passwordHash String    @map("password_hash")
+  otpVerified  Boolean   @default(false) @map("otp_verified")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  donations          Donation[]
+  animalsPosted      Animal[]              @relation("UserPostedAnimals")
+  rescueRequests     RescueRequest[]
+  adoptions          Adoption[]
+  campaignsOrganized Campaign[]            @relation("UserOrganizedCampaigns")
+  campaignsJoined    CampaignParticipant[]
+  contributions      Contributor[]
+  testimonials       Testimonial[]
+  ngoReviews         NgoReview[]
+  complaints         Complaint[]
+
+  @@map("users")
+}
+
+model Ngo {
+  id                 String   @id @default(uuid())
+  name               String
+  email              String   @unique
+  phoneNumber        String?  @map("phone_number")
+  registrationNumber String?  @unique @map("registration_number")
+  location           String?
+  latitude           Float?
+  longitude          Float?
+  areaOfWork         String?  @map("area_of_work")
+  description        String?
+  photoUrl           String?  @map("photo_url")
+  certificateUrl     String?  @map("certificate_url")
+  upiId              String?  @map("upi_id")
+  websiteUrl         String?  @map("website_url")
+  achievements       String?
+  workDone           String?  @map("work_done")
+  passwordHash       String   @map("password_hash")
+  otpVerified        Boolean  @default(false) @map("otp_verified")
+  verified           Boolean  @default(false)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  donationsReceived    Donation[]      @relation("NgoReceivedDonations")
+  donationsMade        Donation[]      @relation("NgoMadeDonations")
+  animalsPosted        Animal[]        @relation("NgoPostedAnimals")
+  rescueRequestsNearby RescueRequest[]
+  adoptions            Adoption[]
+  campaignsOrganized   Campaign[]      @relation("NgoOrganizedCampaigns")
+  posts                NgoPost[]
+  contributors         Contributor[]
+  reviews              NgoReview[]
+
+  @@map("ngos")
+}

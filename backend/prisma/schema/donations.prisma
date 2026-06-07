@@ -1,0 +1,47 @@
+// ─── DONATIONS ──────────────────────────────────────────────
+
+model Donation {
+  id             String         @id @default(uuid())
+  donorId        String?        @map("donor_id")
+  donorNgoId     String?        @map("donor_ngo_id")
+  recipientNgoId String?        @map("recipient_ngo_id")
+  title          String?
+  category       String?
+  condition      String?
+  pickupType     String?        @map("pickup_type")
+  quantity       Int?
+  personsServed  Int?           @map("persons_served")
+  description    String?
+  location       String?
+  latitude       Float?
+  longitude      Float?
+  pickupAddress  String?        @map("pickup_address")
+  timeFrom       DateTime?      @map("time_from")
+  timeTo         DateTime?      @map("time_to")
+  photos         String[]       @default([])
+  amount         Float?
+  transactionId  String?        @map("transaction_id")
+  otp            String?
+  reachedDonor   Boolean        @default(false) @map("reached_donor")
+  status         DonationStatus @default(PENDING)
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  donor        User?          @relation(fields: [donorId], references: [id], onDelete: SetNull)
+  donorNgo     Ngo?           @relation("NgoMadeDonations", fields: [donorNgoId], references: [id], onDelete: SetNull)
+  recipientNgo Ngo?           @relation("NgoReceivedDonations", fields: [recipientNgoId], references: [id], onDelete: SetNull)
+  items        DonationItem[]
+
+  @@map("donations")
+}
+
+model DonationItem {
+  id          String  @id @default(uuid())
+  donationId  String  @map("donation_id")
+  itemType    String? @map("item_type")
+  description String?
+  quantity    Int?
+
+  donation Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+
+  @@map("donation_items")
+}
