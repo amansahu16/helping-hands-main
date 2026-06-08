@@ -13,11 +13,14 @@
     "prisma:pull": "npm run prisma:pull --prefix backend"
   },
   "devDependencies": {
+    "@types/node": "^25.9.2",
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "cloudinary": "^2.10.0",
     "dotenv": "^17.4.2",
-    "multer": "^2.1.1"
+    "multer": "^2.1.1",
+    "prisma": "^6.19.3"
   }
 }
