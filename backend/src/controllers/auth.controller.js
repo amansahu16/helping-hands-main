@@ -67,7 +67,7 @@ async function registerUser(req, res) {
     });
 
     // Still send OTP for UX (in dev it logs to console with code 123456)
-    try { await sendOtp(email); } catch {}
+    try { await sendOtp(email); } catch { }
 
     return res.status(201).json({
       message: "Registered successfully! You can now login.",
@@ -222,7 +222,7 @@ async function registerNgo(req, res) {
       },
     });
 
-    try { await sendOtp(email); } catch {}
+    try { await sendOtp(email); } catch { }
 
     return res.status(201).json({
       message: "NGO registered successfully! You can now login.",
@@ -361,7 +361,7 @@ async function uploadPhoto(req, res) {
     }
 
     const localPath = req.file.path;
-    
+
     // Read file to base64 first as a foolproof fallback
     let fallbackUrl = null;
     try {
@@ -390,6 +390,6 @@ async function uploadPhoto(req, res) {
 
 export const authController = {
   registerUser, loginUser, verifyUserOtp, resendUserOtp, forgotUserPassword, resetUserPassword,
-  registerNgo,  loginNgo,  verifyNgoOtp,  resendNgoOtp,  forgotNgoPassword,  resetNgoPassword,
+  registerNgo, loginNgo, verifyNgoOtp, resendNgoOtp, forgotNgoPassword, resetNgoPassword,
   logout, getMe, uploadPhoto,
 };
