@@ -1,9 +1,7 @@
-// ─── ANIMAL & ADOPTION ──────────────────────────────────────
-
 model Animal {
-  id             String        @id @default(uuid())
-  postedByUserId String?       @map("posted_by_user_id")
-  postedByNgoId  String?       @map("posted_by_ngo_id")
+  id             String       @id @default(uuid())
+  postedByUserId String?      @map("posted_by_user_id")
+  postedByNgoId  String?      @map("posted_by_ngo_id")
   name           String?
   category       String?
   age            String?
@@ -11,13 +9,12 @@ model Animal {
   latitude       Float?
   longitude      Float?
   description    String?
-  photos         String[]      @default([])
-  status         AnimalStatus  @default(AVAILABLE)
-  createdAt      DateTime      @default(now()) @map("created_at")
-
-  postedByUser User?      @relation("UserPostedAnimals", fields: [postedByUserId], references: [id], onDelete: SetNull)
-  postedByNgo  Ngo?       @relation("NgoPostedAnimals", fields: [postedByNgoId], references: [id], onDelete: SetNull)
-  adoptions    Adoption[]
+  photos         String[]     @default([])
+  status         AnimalStatus @default(AVAILABLE)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  adoptions      Adoption[]
+  postedByNgo    Ngo?         @relation("NgoPostedAnimals", fields: [postedByNgoId], references: [id])
+  postedByUser   User?        @relation("UserPostedAnimals", fields: [postedByUserId], references: [id])
 
   @@map("animals")
 }
@@ -28,17 +25,14 @@ model Adoption {
   adopterId String?        @map("adopter_id")
   ngoId     String?        @map("ngo_id")
   status    AdoptionStatus @default(IN_PROGRESS)
-  createdAt DateTime       @default(now()) @map("created_at") // ADDED
+  createdAt DateTime       @default(now()) @map("created_at")
   adoptedAt DateTime?      @map("adopted_at")
-
-  animal  Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
-  adopter User?  @relation(fields: [adopterId], references: [id], onDelete: SetNull)
-  ngo     Ngo?   @relation(fields: [ngoId], references: [id], onDelete: SetNull)
+  adopter   User?          @relation(fields: [adopterId], references: [id])
+  animal    Animal         @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  ngo       Ngo?           @relation(fields: [ngoId], references: [id])
 
   @@map("adoptions")
 }
-
-// ─── RESCUE ─────────────────────────────────────────────────
 
 model RescueRequest {
   id             String       @id @default(uuid())
@@ -50,13 +44,12 @@ model RescueRequest {
   longitude      Float?
   description    String?
   condition      String?
-  photos         String[]     @default([])          // CHANGED: array of URLs
+  photos         String[]     @default([])
   nearbyHospital String?      @map("nearby_hospital")
   status         RescueStatus @default(OPEN)
   createdAt      DateTime     @default(now()) @map("created_at")
-
-  reporter     User? @relation(fields: [reporterId], references: [id], onDelete: SetNull)
-  nearbyCenter Ngo?  @relation(fields: [nearbyCenterId], references: [id], onDelete: SetNull)
+  nearbyCenter   Ngo?         @relation(fields: [nearbyCenterId], references: [id])
+  reporter       User?        @relation(fields: [reporterId], references: [id])
 
   @@map("rescue_requests")
 }

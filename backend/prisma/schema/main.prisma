@@ -1,19 +1,3 @@
-// ============================================================
-//  Prisma Schema — Animal Rescue & NGO Platform
-//  Improvements over v1:
-//   • All bare String status/category/type fields replaced with
-//     proper enum types — avoids invalid DB values at runtime.
-//   • Animal.photos and Donation.photos changed to String[] so
-//     multiple photo URLs are stored natively, not as a single
-//     comma-joined string.
-//   • Adoption gets a createdAt timestamp for audit trail.
-//   • CampaignParticipant gets a unique compound index
-//     [campaignId, userId] — prevents duplicate registrations.
-//   • Contributor gets [userId, ngoId] unique index.
-//   • Location model kept standalone (can be linked via FK later).
-//   • All @@map and @map names kept identical — zero migration risk.
-// ============================================================
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["prismaSchemaFolder"]

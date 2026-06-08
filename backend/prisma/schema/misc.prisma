@@ -1,5 +1,3 @@
-// ─── STANDALONE / PUBLIC MODELS ─────────────────────────────
-
 model Location {
   id        String        @id @default(uuid())
   name      String
@@ -24,10 +22,9 @@ model Testimonial {
   id        String   @id @default(uuid())
   userId    String?  @map("user_id")
   content   String
-  rating    Int?     // 1–5
+  rating    Int?
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@map("testimonials")
 }
@@ -63,12 +60,11 @@ model Complaint {
   reporterId  String?  @map("reporter_id")
   title       String
   description String
-  targetType  String   // "USER", "NGO", "CAMPAIGN", "DONATION", "RESCUE"
+  targetType  String
   targetId    String
-  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  status      String   @default("PENDING")
   createdAt   DateTime @default(now()) @map("created_at")
-
-  reporter User? @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  reporter    User?    @relation(fields: [reporterId], references: [id])
 
   @@map("complaints")
 }

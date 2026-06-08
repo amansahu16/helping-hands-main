@@ -1,5 +1,3 @@
-// ─── ENUMS ──────────────────────────────────────────────────
-
 enum AnimalStatus {
   AVAILABLE
   ADOPTED
@@ -28,12 +26,12 @@ enum CampaignStatus {
 }
 
 enum ParticipantStatus {
-  PENDING
-  APPROVED
-  REJECTED
   REGISTERED
   ATTENDED
   CANCELLED
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum DonationStatus {

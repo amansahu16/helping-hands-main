@@ -1,5 +1,3 @@
-// ─── ADMIN MODEL ─────────────────────────────────────────────
-
 model Admin {
   id           String   @id @default(uuid())
   name         String
