@@ -1,0 +1,37 @@
+model Campaign {
+  id                  String                @id @default(uuid())
+  organizerUserId     String?               @map("organizer_user_id")
+  organizerNgoId      String?               @map("organizer_ngo_id")
+  name                String
+  description         String?
+  location            String?
+  timeFrom            DateTime?             @map("time_from")
+  timeTo              DateTime?             @map("time_to")
+  maxParticipants     Int?                  @map("max_participants")
+  currentParticipants Int                   @default(0) @map("current_participants")
+  status              CampaignStatus        @default(PLANNED)
+  createdAt           DateTime              @default(now()) @map("created_at")
+  type                String?               @default("OTHER")
+  latitude            Float?
+  longitude           Float?
+  participants        CampaignParticipant[]
+  organizerNgo        Ngo?                  @relation("NgoOrganizedCampaigns", fields: [organizerNgoId], references: [id])
+  organizerUser       User?                 @relation("UserOrganizedCampaigns", fields: [organizerUserId], references: [id])
+
+  @@map("campaigns")
+}
+
+model CampaignParticipant {
+  id             String            @id @default(uuid())
+  campaignId     String            @map("campaign_id")
+  userId         String            @map("user_id")
+  identityNumber String?           @map("identity_number")
+  status         ParticipantStatus @default(PENDING)
+  joinedAt       DateTime          @default(now()) @map("joined_at")
+  code           String?
+  campaign       Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@map("campaign_participants")
+}

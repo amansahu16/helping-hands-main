@@ -1,0 +1,593 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@source "../index.html";
+@source "./**/*.{js,ts,jsx,tsx,html}";
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT THEME (default) — Premium warm cream and forest green
+══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="light"] {
+  --bg-deep: #FAF6F0;
+  /* Cream background from image */
+  --bg-main: #F3ECE3;
+  /* Warm sand background from image */
+  --bg-card: #FFFFFF;
+  /* White card */
+  --bg-card-hover: #FDFBF7;
+  /* Soft cream card hover */
+  --text-primary: #13221B;
+  /* Dark green/charcoal text from image */
+  --text-secondary: #2E4237;
+  /* Medium olive green text */
+  --text-muted: #5B6E62;
+  /* Muted olive grey text */
+  --text-faint: #A3B2A8;
+  /* Border subtle */
+  --border-subtle: rgba(19, 34, 27, 0.06);
+  --border-color: rgba(19, 34, 27, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(19, 34, 27, 0.1);
+  --scrollbar-bg: #FAF6F0;
+  --nav-bg: rgba(250, 246, 240, 0.92);
+  --input-bg: rgba(19, 34, 27, 0.03);
+  --shadow-sm: 0 1px 4px rgba(19, 34, 27, 0.04);
+  --shadow-md: 0 4px 20px rgba(19, 34, 27, 0.06);
+  --shadow-lg: 0 12px 40px rgba(19, 34, 27, 0.08);
+  --hero-overlay-start: rgba(0, 0, 0, 0);
+  --hero-overlay-end: rgba(0, 0, 0, 0);
+}
+
+/* ── Dark theme ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-deep: #0A0F0C;
+  --bg-main: #111814;
+  --bg-card: #16201B;
+  --bg-card-hover: #1E2B24;
+  --text-primary: #EEF5F1;
+  --text-secondary: #BAC9BF;
+  --text-muted: #7A8E81;
+  --text-faint: #4C5B51;
+  --border-subtle: rgba(238, 245, 241, 0.08);
+  --border-color: rgba(238, 245, 241, 0.12);
+  --glass-bg: rgba(22, 32, 27, 0.4);
+  --glass-border: rgba(67, 233, 123, 0.15);
+  --scrollbar-bg: #0A0F0C;
+  --nav-bg: rgba(17, 24, 20, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --hero-overlay-start: rgba(7, 7, 26, 0.55);
+  --hero-overlay-end: rgba(15, 15, 42, 0.55);
+}
+
+/* ── Base reset ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #13221B;
+  border-radius: 9999px;
+}
+
+/* ── Gradient text helper ───────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #13221B, #3D6A53);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-green {
+  background: linear-gradient(135deg, #43E97B, #38F9D7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes floatY {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-18px);
+  }
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(108, 99, 255, .25);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(108, 99, 255, .55);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(.85);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.6;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(-100px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.animate-fade-left {
+  animation: fadeInLeft 0.6s ease forwards;
+}
+
+.animate-fade-right {
+  animation: fadeInRight 0.6s ease forwards;
+}
+
+.animate-float {
+  animation: floatY 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.35s ease forwards;
+}
+
+.animate-spin-slow {
+  animation: spin 0.7s linear infinite;
+}
+
+.animate-spin {
+  animation: spin 0.75s linear infinite;
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-36px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(36px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.delay-100 {
+  transition-delay: 0.1s;
+}
+
+.delay-200 {
+  transition-delay: 0.2s;
+}
+
+.delay-300 {
+  transition-delay: 0.3s;
+}
+
+.delay-400 {
+  transition-delay: 0.4s;
+}
+
+.delay-500 {
+  transition-delay: 0.5s;
+}
+
+/* ── Glassmorphism card ─────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background: rgba(108, 99, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(108, 99, 255, 0.20);
+}
+
+/* ── Accordion body ─────────────────────────────────────────── */
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.accordion-body.open {
+  max-height: 400px;
+}
+
+/* ── Glow blobs ─────────────────────────────────────────────── */
+.glow-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.09;
+  pointer-events: none;
+}
+
+/* ── Page hero gradient bg ──────────────────────────────────── */
+/* Light mode hero */
+.page-hero-bg {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, .12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(236, 72, 153, .08) 0%, transparent 60%),
+    linear-gradient(135deg, #EEF2FF 0%, #F8FAFF 60%, #FDF2FF 100%);
+}
+
+[data-theme="dark"] .page-hero-bg {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(108, 99, 255, .15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(255, 101, 132, .10) 0%, transparent 60%),
+    linear-gradient(135deg, #07071A 0%, #0F0F2A 60%, #1A0A2E 100%);
+}
+
+/* ── Hero particle canvas ───────────────────────────────────── */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: particleFloat linear infinite;
+  opacity: 0;
+}
+
+/* ── Section label pill ─────────────────────────────────────── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #13221B;
+  background: rgba(108, 99, 255, .10);
+  border: 1px solid rgba(108, 99, 255, .25);
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(108, 99, 255, .25);
+  border-top-color: #13221B;
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+}
+
+/* ── Newsletter input row ───────────────────────────────────── */
+@media (max-width: 480px) {
+  .newsletter-row {
+    flex-direction: column;
+  }
+}
+
+/* ── Comparison table highlight col ────────────────────────── */
+.col-highlight {
+  background: rgba(108, 99, 255, .08);
+  border-left: 1px solid rgba(108, 99, 255, .2);
+  border-right: 1px solid rgba(108, 99, 255, .2);
+}
+
+/* ── Timeline line ──────────────────────────────────────────── */
+.timeline-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #13221B, #3D6A53);
+  opacity: 0.35;
+}
+
+/* ── Dot live pulse ─────────────────────────────────────────── */
+.dot-live {
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #43E97B;
+  box-shadow: 0 0 8px #43E97B;
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+/* ── Custom range input ─────────────────────────────────────── */
+input[type="range"] {
+  accent-color: #13221B;
+}
+
+/* ── Page enter animation ───────────────────────────────────── */
+.page-enter {
+  animation: pageEnter 0.45s ease forwards;
+}
+
+/* ── Line clamp utilities ───────────────────────────────────── */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Select option style ────────────────────────────────────── */
+[data-theme="dark"] select option {
+  background: #0F0F2A;
+  color: #F0F0FF;
+}
+
+[data-theme="light"] select option,
+select option {
+  background: #FFFFFF;
+  color: #1E1B4B;
+}
+
+/* ── Date input color fix ───────────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+  cursor: pointer;
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+
+/* ── Progress bar transition ────────────────────────────────── */
+.progress-fill {
+  transition: width 0.8s ease;
+}
+
+/* ── Card hover glow ────────────────────────────────────────── */
+.card-glow:hover {
+  box-shadow: 0 0 32px rgba(108, 99, 255, 0.18);
+}
+
+/* ── Light mode card style helper ──────────────────────────── */
+.card-light {
+  background: #FFFFFF;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: 1.25rem;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+}
+
+/* ── Brand Font Style ───────────────────────────────────────── */
+.brand-font {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.03em;
+}
+
+/* ── Page Hero Faded Glass Cards ───────────────────────────── */
+.page-hero-bg>div.max-w-\[700px\],
+.page-hero-bg>div.max-w-\[800px\],
+.page-hero-bg>div.max-w-\[800px\] {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 640px) {
+
+  .page-hero-bg>div.max-w-\[700px\],
+  .page-hero-bg>div.max-w-\[800px\],
+  .page-hero-bg>div.max-w-\[800px\] {
+    padding: 2.5rem 2rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ── Print Styles for Receipts ──────────────────────────────── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  /* Hide navigation, sidebars, hero titles, buttons, footers */
+  nav, footer, header, .page-hero-bg, button, .no-print, a[href^="tel:"], a[href^="mailto:"] {
+    display: none !important;
+  }
+
+  /* Reset layout constraints for print */
+  .page-enter, section, main, div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+  }
+
+  /* Show only the receipt container */
+  .printable-receipt {
+    display: block !important;
+    border: 2px solid #000000 !important;
+    padding: 30px !important;
+    margin: 20px auto !important;
+    max-width: 500px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+
+  .printable-receipt * {
+    color: #000000 !important;
+    font-family: monospace !important;
+  }
+}

@@ -1,0 +1,67 @@
+enum AnimalStatus {
+  AVAILABLE
+  ADOPTED
+  UNDER_TREATMENT
+  RESCUED
+}
+
+enum RescueStatus {
+  OPEN
+  ASSIGNED
+  RESOLVED
+  CLOSED
+}
+
+enum AdoptionStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CampaignStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  REGISTERED
+  ATTENDED
+  CANCELLED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DonationStatus {
+  PENDING
+  ACCEPTED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+}
+
+enum PostType {
+  AWARENESS
+  EVENT
+  ACHIEVEMENT
+  URGENT
+  GENERAL
+}
+
+enum LocationType {
+  SHELTER
+  HOSPITAL
+  CAMP
+  PICKUP_POINT
+  GENERAL
+}
+
+enum ContributionType {
+  VOLUNTEER
+  SPONSOR
+  VET
+  FOSTER
+  OTHER
+}
