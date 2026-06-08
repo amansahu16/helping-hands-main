@@ -5,7 +5,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 
-/* ── Scroll to top on route change ───────────────────────── */
+/* ── Scroll to top on route change ──────────────────────── */
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
@@ -15,39 +15,39 @@ function ScrollToTop() {
 }
 
 // Pages
-import Home             from './pages/Home'
-import About            from './pages/About'
-import HowItWorks       from './pages/HowItWorks'
-import Contact          from './pages/Contact'
-import FAQ              from './pages/FAQ'
+import Home from './pages/Home'
+import About from './pages/About'
+import HowItWorks from './pages/HowItWorks'
+import Contact from './pages/Contact'
+import FAQ from './pages/FAQ'
 
 // Donate
-import DonateItems      from './pages/Donate/DonateItems'
-import DonationForm     from './pages/Donate/DonationForm'
-import ItemListings     from './pages/Donate/ItemListings'
+import DonateItems from './pages/Donate/DonateItems'
+import DonationForm from './pages/Donate/DonationForm'
+import ItemListings from './pages/Donate/ItemListings'
 
 // Animals
-import AnimalWelfare    from './pages/Animals/AnimalWelfare'
-import FeedAnimals      from './pages/Animals/FeedAnimals'
-import RescueShelter    from './pages/Animals/RescueShelter'
-import AdoptPet         from './pages/Animals/AdoptPet'
+import AnimalWelfare from './pages/Animals/AnimalWelfare'
+import FeedAnimals from './pages/Animals/FeedAnimals'
+import RescueShelter from './pages/Animals/RescueShelter'
+import AdoptPet from './pages/Animals/AdoptPet'
 
 // NGOs
-import NGOs             from './pages/NGOs/NGOs'
-import NGORegistration  from './pages/NGOs/NGORegistration'
-import NGOListings      from './pages/NGOs/NGOListings'
-import DonateToNGO      from './pages/NGOs/DonateToNGO'
-import NGODashboard      from './pages/NGOs/NGODashboard'
-import NGODetails        from './pages/NGOs/NGODetails'
+import NGOs from './pages/NGOs/NGOs'
+import NGORegistration from './pages/NGOs/NGORegistration'
+import NGOListings from './pages/NGOs/NGOListings'
+import DonateToNGO from './pages/NGOs/DonateToNGO'
+import NGODashboard from './pages/NGOs/NGODashboard'
+import NGODetails from './pages/NGOs/NGODetails'
 
 // Volunteer
-import Volunteer         from './pages/Volunteer/Volunteer'
-import JoinCampaign      from './pages/Volunteer/JoinCampaign'
-import StartCampaign     from './pages/Volunteer/StartCampaign'
+import Volunteer from './pages/Volunteer/Volunteer'
+import JoinCampaign from './pages/Volunteer/JoinCampaign'
+import StartCampaign from './pages/Volunteer/StartCampaign'
 import VolunteerDashboard from './pages/Volunteer/VolunteerDashboard'
 
 // Admin
-import AdminDashboard    from './pages/Admin/AdminDashboard'
+import AdminDashboard from './pages/Admin/AdminDashboard'
 
 /* ── 404 ─────────────────────────────────────────────────────── */
 function NotFound() {
@@ -92,40 +92,40 @@ export default function App() {
           <Layout>
             <Routes>
               {/* Core pages */}
-              <Route path="/"              element={<Home />} />
-              <Route path="/about"         element={<About />} />
-              <Route path="/how-it-works"  element={<HowItWorks />} />
-              <Route path="/contact"       element={<Contact />} />
-              <Route path="/faq"           element={<FAQ />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/faq" element={<FAQ />} />
 
               {/* Donate */}
-              <Route path="/donate"           element={<DonateItems />} />
-              <Route path="/donate/form"      element={<DonationForm />} />
-              <Route path="/donate/listings"  element={<ItemListings />} />
+              <Route path="/donate" element={<DonateItems />} />
+              <Route path="/donate/form" element={<DonationForm />} />
+              <Route path="/donate/listings" element={<ItemListings />} />
 
               {/* Animal Welfare */}
-              <Route path="/animals"          element={<AnimalWelfare />} />
-              <Route path="/animals/feed"     element={<FeedAnimals />} />
-              <Route path="/animals/rescue"   element={<RescueShelter />} />
-              <Route path="/animals/adopt"    element={<AdoptPet />} />
+              <Route path="/animals" element={<AnimalWelfare />} />
+              <Route path="/animals/feed" element={<FeedAnimals />} />
+              <Route path="/animals/rescue" element={<RescueShelter />} />
+              <Route path="/animals/adopt" element={<AdoptPet />} />
 
               {/* NGOs */}
-              <Route path="/ngos"             element={<NGOs />} />
-              <Route path="/ngos/register"    element={<NGORegistration />} />
-              <Route path="/ngos/listings"    element={<NGOListings />} />
-              <Route path="/ngos/donate"      element={<DonateToNGO />} />
-              <Route path="/ngos/dashboard"   element={<NGODashboard />} />
-              <Route path="/ngos/:id"         element={<NGODetails />} />
+              <Route path="/ngos" element={<NGOs />} />
+              <Route path="/ngos/register" element={<NGORegistration />} />
+              <Route path="/ngos/listings" element={<NGOListings />} />
+              <Route path="/ngos/donate" element={<DonateToNGO />} />
+              <Route path="/ngos/dashboard" element={<NGODashboard />} />
+              <Route path="/ngos/:id" element={<NGODetails />} />
 
               {/* Volunteer */}
-              <Route path="/volunteer"            element={<Volunteer />} />
-              <Route path="/volunteer/join"       element={<JoinCampaign />} />
-              <Route path="/volunteer/start"      element={<StartCampaign />} />
-              <Route path="/volunteer/listings"   element={<VolunteerDashboard />} />
-              <Route path="/volunteer/dashboard"  element={<VolunteerDashboard />} />
+              <Route path="/volunteer" element={<Volunteer />} />
+              <Route path="/volunteer/join" element={<JoinCampaign />} />
+              <Route path="/volunteer/start" element={<StartCampaign />} />
+              <Route path="/volunteer/listings" element={<VolunteerDashboard />} />
+              <Route path="/volunteer/dashboard" element={<VolunteerDashboard />} />
 
               {/* Admin */}
-              <Route path="/admin/dashboard"      element={<AdminDashboard />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
