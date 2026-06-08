@@ -19,8 +19,24 @@ const app = express();
 
 // ── Security ─────────────────────────────────────────────────
 // app.use(helmet());
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+  : [];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN,
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
+      return callback(null, true);
+    }
+    const isAllowed = origin.startsWith("http://localhost:") ||
+                      origin.endsWith(".onrender.com") ||
+                      origin.endsWith(".vercel.app");
+    if (isAllowed) {
+      return callback(null, true);
+    }
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
 }));
 
