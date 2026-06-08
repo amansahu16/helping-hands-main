@@ -5,7 +5,6 @@ const api = axios.create({
     ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/v1`
     : '/api/v1',
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
 })
 
 // Attach JWT from localStorage if present (fallback for non-cookie envs)

@@ -64,11 +64,10 @@ function PhotoPicker({ value, onChange, label = 'Upload Photo', accept = 'image/
       <label className={`text-xs font-medium ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'}`}>{label}</label>
       <div
         onClick={() => !uploading && inputRef.current?.click()}
-        className={`relative flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
-          isDark
+        className={`relative flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${isDark
             ? 'bg-white/[0.04] border border-white/10 hover:border-[#13221B]/50'
             : 'bg-[#EEF2FF] border border-[#C7D2FE] hover:border-[#13221B]'
-        } ${uploading ? 'opacity-70 cursor-wait' : ''}`}
+          } ${uploading ? 'opacity-70 cursor-wait' : ''}`}
       >
         {uploading ? (
           <div className="flex items-center gap-2">
@@ -166,7 +165,7 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
           </div>
           <form onSubmit={handleVerify} className="flex flex-col gap-3">
             <input
-              value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g,'').slice(0,6))}
+              value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="Enter 6-digit OTP"
               className={`w-full px-4 py-3 rounded-xl border text-center text-xl font-bold tracking-widest focus:outline-none focus:ring-2 transition-all ${inputCls}`}
               maxLength={6}
@@ -176,7 +175,7 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
               type="submit" disabled={loading}
               className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white hover:shadow-[0_0_28px_rgba(108,99,255,0.4)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
             >
-              {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Verifying…</> : 'Verify OTP'}
+              {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Verifying…</> : 'Verify OTP'}
             </button>
             <button type="button" onClick={onBack} className={`text-sm hover:underline transition-colors text-center ${isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'}`}>
               ← Back to Registration
@@ -197,12 +196,12 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
   const isDark = theme === 'dark'
 
-  const [tab, setTab]         = useState(initialTab)
-  const [role, setRole]       = useState('user')
-  const [step, setStep]       = useState('form')  // 'form' | 'otp'
-  const [showPw, setShowPw]   = useState(false)
+  const [tab, setTab] = useState(initialTab)
+  const [role, setRole] = useState('user')
+  const [step, setStep] = useState('form')  // 'form' | 'otp'
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [pendingEmail, setPendingEmail] = useState('')
 
@@ -226,7 +225,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
   }
 
   const resetForm = () => {
-    setForm({ name:'', email:'', phone:'', password:'', location:'', latitude:null, longitude:null, photo:null, dateOfBirth:'', occupation:'' })
+    setForm({ name: '', email: '', phone: '', password: '', location: '', latitude: null, longitude: null, photo: null, dateOfBirth: '', occupation: '' })
     setError(''); setSuccess(''); setStep('form')
   }
 
@@ -368,15 +367,14 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
           <>
             {/* Login / Register tabs */}
             <div className={`flex rounded-full p-1 mb-4 ${isDark ? 'bg-white/[0.04] border border-white/8' : 'bg-[#EEF2FF] border border-[#C7D2FE]'}`}>
-              {['login','register'].map(t2 => (
+              {['login', 'register'].map(t2 => (
                 <button
                   key={t2}
                   onClick={() => switchTab(t2)}
-                  className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                    tab === t2
+                  className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${tab === t2
                       ? 'bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white shadow-[0_0_16px_rgba(108,99,255,0.35)]'
                       : isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'
-                  }`}
+                    }`}
                 >
                   {t2 === 'login' ? 'Login' : 'Register'}
                 </button>
@@ -386,22 +384,21 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
             {/* Role selector */}
             <div className="flex gap-2 mb-4">
               {[
-                { id:'user', icon: <User size={15}/>, label:'User' },
-                { id:'ngo', icon: <Building2 size={15}/>, label:'NGO' },
-                { id:'admin', icon: <Shield size={15}/>, label:'Admin' }
+                { id: 'user', icon: <User size={15} />, label: 'User' },
+                { id: 'ngo', icon: <Building2 size={15} />, label: 'NGO' },
+                { id: 'admin', icon: <Shield size={15} />, label: 'Admin' }
               ].map(r => (
                 <button
                   key={r.id}
                   onClick={() => { setRole(r.id); setError('') }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${
-                    role === r.id
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${role === r.id
                       ? isDark
                         ? 'bg-[#13221B]/15 border-[#13221B]/60 text-[#2E7D59]'
                         : 'bg-[#EEF2FF] border-[#13221B] text-[#13221B]'
                       : isDark
                         ? 'bg-transparent border-white/8 text-[#7777AA] hover:border-[#13221B]/30 hover:text-white'
                         : 'bg-transparent border-[#C7D2FE] text-[#6366F1] hover:border-[#13221B] hover:text-[#13221B]'
-                  }`}
+                    }`}
                 >
                   {r.icon} {r.label}
                 </button>
