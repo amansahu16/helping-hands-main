@@ -10,7 +10,8 @@
     "start": "npm run dev",
     "prisma:generate": "npm run prisma:generate --prefix backend",
     "prisma:push": "npm run prisma:push --prefix backend",
-    "prisma:pull": "npm run prisma:pull --prefix backend"
+    "prisma:pull": "npm run prisma:pull --prefix backend",
+    "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
