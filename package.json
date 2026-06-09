@@ -15,8 +15,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
-    "concurrently": "^8.2.2",
-    "license": "ISC"
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
