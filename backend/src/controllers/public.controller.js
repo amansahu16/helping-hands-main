@@ -125,10 +125,13 @@ async function getLocationById(req, res) {
 
 async function getStats(req, res) {
   try {
-    console.log("donation:", prisma.donation);
-    console.log("rescueRequest:", prisma.rescueRequest);
-    console.log("ngo:", prisma.ngo);
-    console.log("user:", prisma.user);
+    console.log("Stats controller version 2");
+    console.log({
+      donation: !!prisma.donation,
+      rescueRequest: !!prisma.rescueRequest,
+      ngo: !!prisma.ngo,
+      user: !!prisma.user,
+    });
 
     const donationsCount = await prisma.donation.count();
     const animalsCount = await prisma.rescueRequest.count({
