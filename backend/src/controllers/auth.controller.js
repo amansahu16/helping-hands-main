@@ -38,12 +38,9 @@ async function registerUser(req, res) {
       return res.status(400).json({ message: "Phone number must be exactly 10 digits" });
     }
 
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasDigit = /\d/.test(password);
-    const hasSymbol = /[^a-zA-Z\d]/.test(password);
-    if (password.length < 8 || !hasLetter || !hasDigit || !hasSymbol) {
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(password)) {
       return res.status(400).json({ 
-        message: "Password must be at least 8 characters long and contain at least one letter, one number, and one symbol" 
+        message: "Password must be exactly 8 characters long and contain both letters and numbers." 
       });
     }
 
@@ -199,12 +196,9 @@ async function registerNgo(req, res) {
       return res.status(400).json({ message: "Phone number must be exactly 10 digits" });
     }
 
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasDigit = /\d/.test(password);
-    const hasSymbol = /[^a-zA-Z\d]/.test(password);
-    if (password.length < 8 || !hasLetter || !hasDigit || !hasSymbol) {
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(password)) {
       return res.status(400).json({ 
-        message: "Password must be at least 8 characters long and contain at least one letter, one number, and one symbol" 
+        message: "Password must be exactly 8 characters long and contain both letters and numbers." 
       });
     }
 
