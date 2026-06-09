@@ -1,6 +1,5 @@
-
-import { PrismaClient } from "../generated/prisma/index.js";
+import { PrismaClient } from "../../src/generated/prisma/index.js";
 
 export const prisma = new PrismaClient();
 
-console.log(typeof prisma.user);
+console.log(Object.keys(prisma));
