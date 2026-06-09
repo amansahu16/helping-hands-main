@@ -1,9 +1,9 @@
 //  PUBLIC / MISC — controllers/public.controller.js
 // ============================================================
 import { prisma } from "../lib/prisma.js";
- 
+
 // ── FAQs ─────────────────────────────────────────────────────
- 
+
 async function listFaqs(req, res) {
   try {
     const { category } = req.query;
@@ -16,9 +16,9 @@ async function listFaqs(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 // ── Testimonials ─────────────────────────────────────────────
- 
+
 async function listTestimonials(req, res) {
   try {
     const testimonials = await prisma.testimonial.findMany({
@@ -31,15 +31,15 @@ async function listTestimonials(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 async function createTestimonial(req, res) {
   try {
     const { content, rating } = req.body;
- 
+
     if (rating !== undefined && (rating < 1 || rating > 5)) {
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
     }
- 
+
     const testimonial = await prisma.testimonial.create({
       data: { userId: req.user.id, content, rating },
     });
@@ -48,14 +48,14 @@ async function createTestimonial(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 // ── Newsletter ────────────────────────────────────────────────
- 
+
 async function subscribeNewsletter(req, res) {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
- 
+
     const subscription = await prisma.newsletter.upsert({
       where: { email },
       update: {},                        // already subscribed — idempotent
@@ -66,7 +66,7 @@ async function subscribeNewsletter(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 async function unsubscribeNewsletter(req, res) {
   try {
     const { email } = req.body;
@@ -76,30 +76,30 @@ async function unsubscribeNewsletter(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 // ── Contact ───────────────────────────────────────────────────
- 
+
 async function sendContactMessage(req, res) {
   try {
     const { name, email, phone, message } = req.body;
- 
+
     if (!name || !email || !message) {
       return res.status(400).json({ message: "Name, email, and message are required" });
     }
- 
+
     const contact = await prisma.contactMessage.create({
       data: { name, email, phone, message },
     });
- 
+
     // Optionally: trigger an email notification to admin here
     return res.status(201).json({ message: "Message received. We'll get back to you soon.", id: contact.id });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 // ── Locations ─────────────────────────────────────────────────
- 
+
 async function listLocations(req, res) {
   try {
     const { type } = req.query;
@@ -112,7 +112,7 @@ async function listLocations(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 async function getLocationById(req, res) {
   try {
     const location = await prisma.location.findUnique({ where: { id: req.params.id } });
@@ -125,6 +125,12 @@ async function getLocationById(req, res) {
 
 async function getStats(req, res) {
   try {
+    console.log("donation", prisma.donation);
+    console.log("rescueRequest", prisma.rescueRequest);
+    console.log("ngo", prisma.ngo);
+    console.log("user", prisma.user);
+
+
     const donationsCount = await prisma.donation.count();
     const animalsCount = await prisma.rescueRequest.count({ where: { status: "RESOLVED" } });
     const ngosCount = await prisma.ngo.count();
@@ -179,8 +185,8 @@ async function getLeaderboard(req, res) {
         points
       };
     })
-    .sort((a, b) => b.points - a.points)
-    .slice(0, 10);
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 10);
 
     return res.json(leaderboard);
   } catch (err) {
@@ -218,7 +224,7 @@ async function getAnimalStats(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
 export const publicController = {
   listFaqs,
   listTestimonials, createTestimonial,
