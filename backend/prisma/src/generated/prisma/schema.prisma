@@ -1,3 +1,4 @@
+
 model Animal {
   id             String   @id @default(uuid())
   postedByUserId String?  @map("posted_by_user_id")
