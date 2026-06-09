@@ -3,20 +3,20 @@ import fs from "fs";
 import multer from "multer";
 import path from "path";
 
-const uploadDir = "./public/temp";
+const uploadDir = path.join(process.cwd(), "public", "temp");
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir)
-    },
-    filename: function (req, file, cb) {
-      cb(null, file.originalname)
+  destination: function (req, file, cb) {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
-  })
-  
-export const upload = multer({ 
-    storage, 
+    cb(null, uploadDir)
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+})
+
+export const upload = multer({
+  storage,
 })
