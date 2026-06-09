@@ -7,12 +7,11 @@ async function listDonations(req, res) {
     const { status, category, location, donorId, recipientNgoId, page = 1, limit = 100 } = req.query;
     const donations = await prisma.donation.findMany({
       where: {
-        ...(status   && { status }),
         ...(category && { category: { contains: category, mode: "insensitive" } }),
         ...(location && { location: { contains: location, mode: "insensitive" } }),
         ...(donorId  && { donorId }),
         recipientNgoId: recipientNgoId || null,
-        status: status || { not: "CANCELLED" },
+        status: status ? status : { notIn: ["DELIVERED", "CANCELLED"] },
       },
       include: {
         donor:        { select: { id: true, name: true } },

@@ -7,7 +7,7 @@ async function listCampaigns(req, res) {
     const { status, type, location, organizerUserId, organizerNgoId, page = 1, limit = 100 } = req.query;
     const campaigns = await prisma.campaign.findMany({
       where: {
-        ...(status   && { status }),
+        status: status ? status : { notIn: ["COMPLETED", "CANCELLED"] },
         ...(type     && { type }),
         ...(location && { location: { contains: location, mode: "insensitive" } }),
         ...(organizerUserId && { organizerUserId }),

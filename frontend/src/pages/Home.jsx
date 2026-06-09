@@ -346,21 +346,6 @@ export default function Home() {
                 </Link>
               </div>
 
-              {/* Quick stats */}
-              <div className="flex flex-wrap gap-6">
-                {[
-                  { n: stats.donations || 0, l: 'Donations Made' },
-                  { n: stats.animals || 0, l: 'Animals Rescued' },
-                  { n: stats.ngos || 0, l: 'NGOs Supported' },
-                ].map((s, i) => (
-                  <div key={i} className="flex flex-col">
-                    <span className="font-['Poppins'] font-bold text-2xl gradient-text">
-                      <Counter target={s.n} />
-                    </span>
-                    <span className={`text-xs ${mutedText}`}>{s.l}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Right — visual card */}
@@ -404,38 +389,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══ STATS ══════════════════════════════════════════════════ */}
-      <section className={`py-20 relative ${sectionB}`}>
-        <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-r from-[#13221B]/5 via-transparent to-[#3D6A53]/5' : 'bg-gradient-to-r from-[#EEF2FF] via-transparent to-[#FDF2FF]'}`} />
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 relative">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: <Package size={32} className={isDark ? 'text-[#43E97B] mx-auto' : 'text-[#13221B] mx-auto'} />, num: stats.donations, suffix: '', label: 'Donations Made', color: isDark ? '#43E97B' : '#13221B' },
-              { icon: <PawPrint size={32} className={isDark ? 'text-[#FF8FA3] mx-auto' : 'text-[#3D6A53] mx-auto'} />, num: stats.animals, suffix: '', label: 'Animals Rescued', color: isDark ? '#FF8FA3' : '#3D6A53' },
-              { icon: <Building size={32} className={isDark ? 'text-[#38F9D7] mx-auto' : 'text-[#2E7D59] mx-auto'} />, num: stats.ngos, suffix: '', label: 'NGOs Supported', color: isDark ? '#38F9D7' : '#2E7D59' },
-              { icon: <Users size={32} className="text-[#FFB347] mx-auto" />, num: stats.volunteers, suffix: '', label: 'Volunteers Joined', color: '#FFB347' },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className={`border rounded-2xl p-6 text-center reveal hover:-translate-y-1 transition-all duration-300 ${isDark
-                  ? 'bg-[#16201B] border-[#2E7D59]/15 hover:border-[#43E97B]/30 hover:shadow-[0_8px_30px_rgba(67,233,123,0.05)]'
-                  : 'bg-white border-[#E0E7FF] hover:border-[#13221B]/35 shadow-[0_4px_20px_rgba(19,34,27,0.03)] hover:shadow-[0_8px_24px_rgba(19,34,27,0.06)]'
-                  }`}
-                style={{ transitionDelay: `${i * 0.1}s` }}
-              >
-                <div className="mb-3">{s.icon}</div>
-                <div
-                  className="font-['Poppins'] font-black text-4xl mb-1"
-                  style={{ background: `linear-gradient(135deg, ${s.color}, ${isDark ? 'white' : '#1E1B4B'})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-                >
-                  <Counter target={s.num || 0} suffix={s.suffix} />
-                </div>
-                <p className={`text-sm font-medium ${mutedText}`}>{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══ HOW IT WORKS ═══════════════════════════════════════════ */}
       <section className={`py-24 relative ${sectionA}`}>

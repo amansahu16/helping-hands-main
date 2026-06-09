@@ -56,7 +56,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', handler)
+    window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
@@ -69,6 +69,10 @@ export default function Navbar() {
 
   const openLogin = () => { setAuthTab('login'); setAuthOpen(true) }
   const openReg = () => { setAuthTab('register'); setAuthOpen(true) }
+  const handleLogout = async () => {
+    await logout()
+    navigate('/')
+  }
 
   // Navbar background
   const navBg = scrolled
@@ -224,7 +228,7 @@ export default function Navbar() {
                   </span>
                 </Link>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors ${isDark ? 'text-[#BBBBD8] hover:text-[#3D6A53]' : 'text-[#6366F1] hover:text-[#3D6A53]'}`}
                 >
                   <LogOut size={15} />
@@ -342,9 +346,25 @@ export default function Navbar() {
                   </>
                 )}
                 {user && (
-                  <button onClick={logout} className="w-full py-2.5 text-center text-sm text-[#3D6A53] border border-[#3D6A53]/30 rounded-xl">
-                    Logout
-                  </button>
+                  <div className="flex flex-col gap-2 w-full mt-2">
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#13221B] to-[#3D6A53] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {(user.name || user.email || 'NGO').charAt(0).toUpperCase()}
+                      </div>
+                      <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>
+                        {user.name || user.email}
+                      </span>
+                    </div>
+                    <Link
+                      to={role === 'admin' ? '/admin/dashboard' : role === 'ngo' ? '/ngos/dashboard' : '/volunteer/dashboard'}
+                      className="w-full py-2.5 text-center text-sm font-semibold rounded-xl bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white hover:opacity-90 transition-all block"
+                    >
+                      Go to Dashboard
+                    </Link>
+                    <button onClick={handleLogout} className="w-full py-2.5 text-center text-sm text-[#FF8FA3] border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-all">
+                      Logout
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

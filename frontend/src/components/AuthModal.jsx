@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Eye, EyeOff, User, Building2, CheckCircle,
@@ -65,8 +65,8 @@ function PhotoPicker({ value, onChange, label = 'Upload Photo', accept = 'image/
       <div
         onClick={() => !uploading && inputRef.current?.click()}
         className={`relative flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${isDark
-            ? 'bg-white/[0.04] border border-white/10 hover:border-[#13221B]/50'
-            : 'bg-[#EEF2FF] border border-[#C7D2FE] hover:border-[#13221B]'
+          ? 'bg-white/[0.04] border border-white/10 hover:border-[#13221B]/50'
+          : 'bg-[#EEF2FF] border border-[#C7D2FE] hover:border-[#13221B]'
           } ${uploading ? 'opacity-70 cursor-wait' : ''}`}
       >
         {uploading ? (
@@ -210,6 +210,19 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
     latitude: null, longitude: null,
     photo: null, dateOfBirth: '', occupation: '',
   })
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        name: '', email: '', phone: '', password: '', location: '',
+        latitude: null, longitude: null,
+        photo: null, dateOfBirth: '', occupation: '',
+      })
+      setError('')
+      setSuccess('')
+      setStep('form')
+    }
+  }, [open])
 
   if (!open) return null
 
@@ -372,8 +385,8 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
                   key={t2}
                   onClick={() => switchTab(t2)}
                   className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${tab === t2
-                      ? 'bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white shadow-[0_0_16px_rgba(108,99,255,0.35)]'
-                      : isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'
+                    ? 'bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white shadow-[0_0_16px_rgba(108,99,255,0.35)]'
+                    : isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'
                     }`}
                 >
                   {t2 === 'login' ? 'Login' : 'Register'}
@@ -392,12 +405,12 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
                   key={r.id}
                   onClick={() => { setRole(r.id); setError('') }}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${role === r.id
-                      ? isDark
-                        ? 'bg-[#13221B]/15 border-[#13221B]/60 text-[#2E7D59]'
-                        : 'bg-[#EEF2FF] border-[#13221B] text-[#13221B]'
-                      : isDark
-                        ? 'bg-transparent border-white/8 text-[#7777AA] hover:border-[#13221B]/30 hover:text-white'
-                        : 'bg-transparent border-[#C7D2FE] text-[#6366F1] hover:border-[#13221B] hover:text-[#13221B]'
+                    ? isDark
+                      ? 'bg-[#13221B]/15 border-[#13221B]/60 text-[#2E7D59]'
+                      : 'bg-[#EEF2FF] border-[#13221B] text-[#13221B]'
+                    : isDark
+                      ? 'bg-transparent border-white/8 text-[#7777AA] hover:border-[#13221B]/30 hover:text-white'
+                      : 'bg-transparent border-[#C7D2FE] text-[#6366F1] hover:border-[#13221B] hover:text-[#13221B]'
                     }`}
                 >
                   {r.icon} {r.label}
@@ -441,7 +454,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
                   <div className="flex flex-col gap-1.5">
                     <label className={labelClass}>Full Name *</label>
                     <input name="name" value={form.name} onChange={change} required
-                      placeholder="e.g. Rahul Sharma"
+                      placeholder="e.g. Aman Sahu"
                       className={inputClass} />
                   </div>
                 )}

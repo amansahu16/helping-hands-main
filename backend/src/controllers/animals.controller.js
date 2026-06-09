@@ -8,7 +8,7 @@ async function listAnimals(req, res) {
     const { status, category, location, page = 1, limit = 12 } = req.query;
     const animals = await prisma.animal.findMany({
       where: {
-        ...(status   && { status }),
+        status: status ? status : { not: "ADOPTED" },
         ...(category && { category: { contains: category, mode: "insensitive" } }),
         ...(location && { location: { contains: location, mode: "insensitive" } }),
       },

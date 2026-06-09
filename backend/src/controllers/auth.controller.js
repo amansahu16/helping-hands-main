@@ -38,12 +38,25 @@ async function registerUser(req, res) {
       return res.status(400).json({ message: "Phone number must be exactly 10 digits" });
     }
 
-    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(password)) {
-      return res.status(400).json({ message: "Password must be exactly 8 characters long and alphanumeric" });
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSymbol = /[^a-zA-Z\d]/.test(password);
+    if (password.length < 8 || !hasLetter || !hasDigit || !hasSymbol) {
+      return res.status(400).json({ 
+        message: "Password must be at least 8 characters long and contain at least one letter, one number, and one symbol" 
+      });
     }
 
-    const exists = await prisma.user.findUnique({ where: { email } });
-    if (exists) return res.status(409).json({ message: "Email already registered" });
+    if (password.toLowerCase() === email.toLowerCase()) {
+      return res.status(400).json({ message: "Password cannot be the same as your email" });
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { email } });
+    const ngoExists = await prisma.ngo.findUnique({ where: { email } });
+    const adminExists = await prisma.admin.findUnique({ where: { email } });
+    if (userExists || ngoExists || adminExists) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
 
     const passwordHash = await hashPassword(password);
 
@@ -186,12 +199,25 @@ async function registerNgo(req, res) {
       return res.status(400).json({ message: "Phone number must be exactly 10 digits" });
     }
 
-    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(password)) {
-      return res.status(400).json({ message: "Password must be exactly 8 characters long and alphanumeric" });
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSymbol = /[^a-zA-Z\d]/.test(password);
+    if (password.length < 8 || !hasLetter || !hasDigit || !hasSymbol) {
+      return res.status(400).json({ 
+        message: "Password must be at least 8 characters long and contain at least one letter, one number, and one symbol" 
+      });
     }
 
-    const emailExists = await prisma.ngo.findUnique({ where: { email } });
-    if (emailExists) return res.status(409).json({ message: "Email already registered" });
+    if (password.toLowerCase() === email.toLowerCase()) {
+      return res.status(400).json({ message: "Password cannot be the same as your email" });
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { email } });
+    const ngoExists = await prisma.ngo.findUnique({ where: { email } });
+    const adminExists = await prisma.admin.findUnique({ where: { email } });
+    if (userExists || ngoExists || adminExists) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
 
     if (registrationNumber) {
       const regExists = await prisma.ngo.findUnique({ where: { registrationNumber } });

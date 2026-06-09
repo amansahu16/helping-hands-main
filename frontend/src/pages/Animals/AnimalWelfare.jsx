@@ -141,20 +141,6 @@ export default function AnimalWelfare() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className={`py-16 ${sectionBgB}`}>
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 reveal">
-            {stats.map((s, i) => (
-              <div key={i} className={`rounded-2xl p-5 text-center flex flex-col items-center justify-center ${glassCard}`}>
-                <div className="mb-2">{s.icon}</div>
-                <div className="font-['Poppins'] font-black text-3xl gradient-text mb-1">{s.val}</div>
-                <p className={`text-xs ${textMuted}`}>{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* How it works */}
       <section className={`py-20 ${sectionBgA}`}>

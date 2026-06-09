@@ -8,7 +8,7 @@ async function listRescueRequests(req, res) {
     const { status, location, page = 1, limit = 10 } = req.query;
     const rescues = await prisma.rescueRequest.findMany({
       where: {
-        ...(status   && { status }),
+        status: status ? status : { notIn: ["RESOLVED", "CLOSED"] },
         ...(location && { location: { contains: location, mode: "insensitive" } }),
       },
       include: {

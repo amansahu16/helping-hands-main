@@ -281,6 +281,8 @@ body {
   opacity: 0;
   transform: translateY(28px);
   transition: opacity 0.7s ease, transform 0.7s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .reveal.visible {
@@ -292,6 +294,8 @@ body {
   opacity: 0;
   transform: translateX(-36px);
   transition: opacity 0.7s ease, transform 0.7s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .reveal-left.visible {
@@ -303,6 +307,8 @@ body {
   opacity: 0;
   transform: translateX(36px);
   transition: opacity 0.7s ease, transform 0.7s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .reveal-right.visible {

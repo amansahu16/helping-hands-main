@@ -518,88 +518,90 @@ export default function RescueShelter() {
       <section className={`py-16 ${sectionBg}`}>
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6">
           {/* Urgent Open Rescues Section */}
-          <div className="mb-12">
-            <h2 className={`font-['Poppins'] font-black text-3xl mb-2 flex items-center gap-2 ${heroText}`}>
-              <span>🚨</span> Urgent <span className="gradient-text">Open Rescues</span>
-            </h2>
-            <p className={`text-sm mb-6 ${textMuted}`}>Below are active rescue reports from citizens. If you are a rescue center or NGO, please claim these cases to help save them.</p>
+          {user?.role === 'ngo' && (
+            <div className="mb-12">
+              <h2 className={`font-['Poppins'] font-black text-3xl mb-2 flex items-center gap-2 ${heroText}`}>
+                <span>🚨</span> Urgent <span className="gradient-text">Open Rescues</span>
+              </h2>
+              <p className={`text-sm mb-6 ${textMuted}`}>Below are active rescue reports from citizens. If you are a rescue center or NGO, please claim these cases to help save them.</p>
 
-            {rescuesLoading ? (
-              <div className="flex items-center justify-center py-10 gap-2">
-                <Loader2 className="animate-spin text-[#3D6A53]" />
-                <span className={textMuted}>Loading open rescue requests...</span>
-              </div>
-            ) : openRescues.length === 0 ? (
-              <div className={`p-8 text-center rounded-2xl border ${isDark ? 'bg-[#16163A]/40 border-white/5' : 'bg-white border-[#E0E7FF]'} shadow-sm`}>
-                <p className={`text-sm ${textMuted}`}>No open rescue reports right now. All animals are safe! ❤️</p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {openRescues.map(rescue => (
-                  <div
-                    key={rescue.id}
-                    onClick={() => {
-                      if (user?.role === 'ngo') {
-                        handleClaimRescue(rescue.id)
-                      }
-                    }}
-                    className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 ${
-                      user?.role === 'ngo'
-                        ? 'cursor-pointer hover:scale-[1.02] hover:border-[#3D6A53] hover:shadow-[0_4px_20px_rgba(61,106,83,0.15)]'
-                        : ''
-                    } ${
-                      isDark ? 'bg-[#16163A] border-white/8 hover:border-[#3D6A53]/30' : 'bg-white border-[#E0E7FF] hover:border-[#3D6A53]/40 shadow-sm'
-                    }`}
-                  >
-                    <div>
-                      {rescue.photos && rescue.photos.length > 0 ? (
-                        <div className="w-full h-40 rounded-xl overflow-hidden mb-4">
-                          <img src={rescue.photos[0]} alt={rescue.animalType} className="w-full h-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="w-full h-40 rounded-xl bg-[#3D6A53]/10 flex items-center justify-center mb-4">
-                          <PawPrint size={40} className="text-[#3D6A53]/30" />
-                        </div>
-                      )}
-                      <div className="flex justify-between items-start gap-2 mb-2">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#FF8FA3]/15 text-[#FF8FA3]">
-                          {rescue.animalType}
-                        </span>
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#3D6A53]/15 text-[#2E7D59]">
-                          {rescue.condition}
-                        </span>
-                      </div>
-                      <p className={`text-xs ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'} mb-1`}>
-                        Reported: {new Date(rescue.createdAt).toLocaleString()}
-                      </p>
-                      <p className={`text-xs ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'} mb-2`}>
-                        Reported by: <span className="font-semibold">{rescue.reporter?.name || 'Anonymous'}</span>
-                      </p>
-                      <p className={`text-sm font-semibold mb-2 ${heroText}`}>Description:</p>
-                      <p className={`text-xs leading-relaxed mb-4 line-clamp-3 ${textMuted}`}>
-                        {rescue.description}
-                      </p>
-                      <div className={`flex items-center gap-1.5 text-xs mb-4 ${textMuted}`}>
-                        <MapPin size={12} className="shrink-0 text-[#2E7D59]" />
-                        <span className="truncate">{rescue.location}</span>
-                      </div>
-                    </div>
-                    {user?.role === 'ngo' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
+              {rescuesLoading ? (
+                <div className="flex items-center justify-center py-10 gap-2">
+                  <Loader2 className="animate-spin text-[#3D6A53]" />
+                  <span className={textMuted}>Loading open rescue requests...</span>
+                </div>
+              ) : openRescues.length === 0 ? (
+                <div className={`p-8 text-center rounded-2xl border ${isDark ? 'bg-[#16163A]/40 border-white/5' : 'bg-white border-[#E0E7FF]'} shadow-sm`}>
+                  <p className={`text-sm ${textMuted}`}>No open rescue reports right now. All animals are safe! ❤️</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {openRescues.map(rescue => (
+                    <div
+                      key={rescue.id}
+                      onClick={() => {
+                        if (user?.role === 'ngo') {
                           handleClaimRescue(rescue.id)
-                        }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#3D6A53] hover:bg-[#2E7D59] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <Heart size={12} className="fill-white" /> Claim & Rescue Animal
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                        }
+                      }}
+                      className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 ${
+                        user?.role === 'ngo'
+                          ? 'cursor-pointer hover:scale-[1.02] hover:border-[#3D6A53] hover:shadow-[0_4px_20px_rgba(61,106,83,0.15)]'
+                          : ''
+                      } ${
+                        isDark ? 'bg-[#16163A] border-white/8 hover:border-[#3D6A53]/30' : 'bg-white border-[#E0E7FF] hover:border-[#3D6A53]/40 shadow-sm'
+                      }`}
+                    >
+                      <div>
+                        {rescue.photos && rescue.photos.length > 0 ? (
+                          <div className="w-full h-40 rounded-xl overflow-hidden mb-4">
+                            <img src={rescue.photos[0]} alt={rescue.animalType} className="w-full h-full object-contain" />
+                          </div>
+                        ) : (
+                          <div className="w-full h-40 rounded-xl bg-[#3D6A53]/10 flex items-center justify-center mb-4">
+                            <PawPrint size={40} className="text-[#3D6A53]/30" />
+                          </div>
+                        )}
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#FF8FA3]/15 text-[#FF8FA3]">
+                            {rescue.animalType}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#3D6A53]/15 text-[#2E7D59]">
+                            {rescue.condition}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'} mb-1`}>
+                          Reported: {new Date(rescue.createdAt).toLocaleString()}
+                        </p>
+                        <p className={`text-xs ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'} mb-2`}>
+                          Reported by: <span className="font-semibold">{rescue.reporter?.name || 'Anonymous'}</span>
+                        </p>
+                        <p className={`text-sm font-semibold mb-2 ${heroText}`}>Description:</p>
+                        <p className={`text-xs leading-relaxed mb-4 line-clamp-3 ${textMuted}`}>
+                          {rescue.description}
+                        </p>
+                        <div className={`flex items-center gap-1.5 text-xs mb-4 ${textMuted}`}>
+                          <MapPin size={12} className="shrink-0 text-[#2E7D59]" />
+                          <span className="truncate">{rescue.location}</span>
+                        </div>
+                      </div>
+                      {user?.role === 'ngo' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleClaimRescue(rescue.id)
+                          }}
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#3D6A53] hover:bg-[#2E7D59] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Heart size={12} className="fill-white" /> Claim & Rescue Animal
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid lg:grid-cols-5 gap-10">
 

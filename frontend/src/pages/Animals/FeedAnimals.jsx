@@ -273,21 +273,6 @@ export default function FeedAnimals() {
 
 
 
-      {/* Newsletter */}
-      <section className={`py-14 ${sectionBgA}`}>
-        <div className="max-w-[500px] mx-auto px-4 text-center reveal">
-          <h2 className={`font-['Poppins'] font-bold text-2xl mb-2 ${heroText}`}>Stay Updated</h2>
-          <p className={`text-sm mb-5 ${textMuted}`}>Get feeding drive alerts and animal welfare tips.</p>
-          {subbed ? (
-            <p className="text-[#43E97B] font-semibold">✓ Subscribed!</p>
-          ) : (
-            <form onSubmit={e => { e.preventDefault(); if (email) setSubbed(true) }} className="flex gap-2">
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email" className={inputClass} />
-              <button type="submit" className="px-5 py-2.5 rounded-full bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white text-sm font-bold cursor-pointer">Subscribe</button>
-            </form>
-          )}
-        </div>
-      </section>
 
       {/* FAQ */}
       <section className={`py-14 ${sectionBgB}`}>
