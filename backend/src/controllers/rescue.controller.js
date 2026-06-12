@@ -13,6 +13,7 @@ async function listRescueRequests(req, res) {
       },
       include: {
         reporter:     { select: { id: true, name: true } },
+        reporterNgo:  { select: { id: true, name: true } },
         nearbyCenter: { select: { id: true, name: true, phoneNumber: true } },
       },
       skip: (page - 1) * limit,
@@ -31,6 +32,7 @@ async function getRescueById(req, res) {
       where: { id: req.params.id },
       include: {
         reporter:     { select: { id: true, name: true, phoneNumber: true } },
+        reporterNgo:  { select: { id: true, name: true, phoneNumber: true } },
         nearbyCenter: { select: { id: true, name: true, phoneNumber: true, location: true } },
       },
     });
@@ -51,9 +53,11 @@ async function createRescueRequest(req, res) {
  
     const uploadedPhotos = Array.isArray(photos) ? await uploadMultipleImages(photos) : [];
 
+    const isNgo = req.user?.role === 'ngo';
     const rescue = await prisma.rescueRequest.create({
       data: {
-        reporterId:     req.user?.id || null,  // optional auth
+        reporterId:     !isNgo ? (req.user?.id || null) : null,
+        reporterNgoId:  isNgo ? req.user.id : null,
         location,
         latitude:       latitude ? Number(latitude) : null,
         longitude:      longitude ? Number(longitude) : null,
@@ -75,7 +79,8 @@ async function updateRescueRequest(req, res) {
   try {
     const rescue = await prisma.rescueRequest.findUnique({ where: { id: req.params.id } });
     if (!rescue) return res.status(404).json({ message: "Rescue request not found" });
-    if (rescue.reporterId !== req.user.id) return res.status(403).json({ message: "Forbidden" });
+    const isReporter = (rescue.reporterId === req.user.id) || (rescue.reporterNgoId === req.user.id);
+    if (!isReporter) return res.status(403).json({ message: "Forbidden" });
  
     const { location, description, condition, photos, nearbyHospital } = req.body;
     const uploadedPhotos = Array.isArray(photos) ? await uploadMultipleImages(photos) : undefined;
@@ -94,7 +99,8 @@ async function deleteRescueRequest(req, res) {
   try {
     const rescue = await prisma.rescueRequest.findUnique({ where: { id: req.params.id } });
     if (!rescue) return res.status(404).json({ message: "Rescue request not found" });
-    if (rescue.reporterId !== req.user.id) return res.status(403).json({ message: "Forbidden" });
+    const isReporter = (rescue.reporterId === req.user.id) || (rescue.reporterNgoId === req.user.id);
+    if (!isReporter) return res.status(403).json({ message: "Forbidden" });
  
     await prisma.rescueRequest.delete({ where: { id: req.params.id } });
     return res.json({ message: "Rescue request deleted" });

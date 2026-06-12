@@ -59,6 +59,7 @@ model Adoption {
 model RescueRequest {
   id             String       @id @default(uuid())
   reporterId     String?      @map("reporter_id")
+  reporterNgoId  String?      @map("reporter_ngo_id")
   nearbyCenterId String?      @map("nearby_center_id")
   animalType     String?      @map("animal_type")
   location       String?
@@ -72,6 +73,7 @@ model RescueRequest {
   createdAt      DateTime     @default(now()) @map("created_at")
   nearbyCenter   Ngo?         @relation(fields: [nearbyCenterId], references: [id])
   reporter       User?        @relation(fields: [reporterId], references: [id])
+  reporterNgo    Ngo?         @relation("NgoReportedRescues", fields: [reporterNgoId], references: [id])
 
   @@map("rescue_requests")
 }
@@ -397,6 +399,7 @@ model Ngo {
   posts                NgoPost[]
   reviews              NgoReview[]
   rescueRequestsNearby RescueRequest[]
+  reportedRescues      RescueRequest[] @relation("NgoReportedRescues")
 
   @@map("ngos")
 }

@@ -12,7 +12,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const stored = localStorage.getItem('hh_user')
     if (stored) {
-      try { setUser(JSON.parse(stored)) } catch {}
+      try {
+        const parsed = JSON.parse(stored)
+        let cleanUser = parsed
+        // Auto-detect and heal legacy/corrupted storage format { token, user: { ... } }
+        if (parsed && parsed.user && typeof parsed.user === 'object') {
+          cleanUser = parsed.user
+          localStorage.setItem('hh_user', JSON.stringify(parsed.user))
+          if (parsed.token && !localStorage.getItem('hh_token')) {
+            localStorage.setItem('hh_token', parsed.token)
+          }
+        }
+        setUser(cleanUser)
+      } catch (err) {
+        console.error('Failed to restore session:', err)
+        localStorage.removeItem('hh_user')
+      }
     }
     const storedRole = localStorage.getItem('hh_role')
     if (storedRole) setRole(storedRole)
@@ -21,8 +36,8 @@ export function AuthProvider({ children }) {
 
   const loginUser = async ({ email, password }) => {
     const { data } = await api.post('/auth/user/login', { email, password })
-    const u = data.data?.user || data.user || data.data || data
-    const token = data.data?.token || data.token
+    const u = data.user || data.data?.user || data.data || data
+    const token = data.token || data.data?.token
     if (token) localStorage.setItem('hh_token', token)
     localStorage.setItem('hh_user', JSON.stringify(u))
     localStorage.setItem('hh_role', 'user')
@@ -35,8 +50,8 @@ export function AuthProvider({ children }) {
     const { data } = await api.post('/auth/ngo/login', {
       email, password, registrationNumber
     })
-    const u = data.data?.ngo || data.ngo || data.data || data
-    const token = data.data?.token || data.token
+    const u = data.user || data.data?.user || data.ngo || data.data?.ngo || data.data || data
+    const token = data.token || data.data?.token
     if (token) localStorage.setItem('hh_token', token)
     localStorage.setItem('hh_user', JSON.stringify(u))
     localStorage.setItem('hh_role', 'ngo')
@@ -50,8 +65,8 @@ export function AuthProvider({ children }) {
     if (data.requiresOtp) {
       return data
     }
-    const u = data.user || data
-    const token = data.token
+    const u = data.user || data.data?.user || data.data || data
+    const token = data.token || data.data?.token
     if (token) localStorage.setItem('hh_token', token)
     localStorage.setItem('hh_user', JSON.stringify(u))
     localStorage.setItem('hh_role', 'admin')
@@ -62,8 +77,8 @@ export function AuthProvider({ children }) {
 
   const verifyOtpAdmin = async (email, otp) => {
     const { data } = await api.post('/admin/verify-login-otp', { email, otp })
-    const u = data.user || data
-    const token = data.token
+    const u = data.user || data.data?.user || data.data || data
+    const token = data.token || data.data?.token
     if (token) localStorage.setItem('hh_token', token)
     localStorage.setItem('hh_user', JSON.stringify(u))
     localStorage.setItem('hh_role', 'admin')

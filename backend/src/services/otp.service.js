@@ -1,19 +1,31 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
+
+// Force Node to prefer IPv4 DNS resolution first to prevent connection timeouts on cloud providers like Render
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 // In-memory OTP storage for development
 const otpStore = new Map();
 
 // Configure SMTP transporter
+// Note: Render blocks port 465 by default, so we use port 587 (STARTTLS) with robust TLS settings
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "465"),
-  secure: process.env.SMTP_HOST
-    ? process.env.SMTP_SECURE === "true"
-    : true, // default to true (SSL) for gmail on port 465
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  secure: process.env.SMTP_SECURE === "true", // false for port 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false,
+    minVersion: "TLSv1.2",
+  },
+  connectionTimeout: 10000, // 10s timeout
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 export const sendAdminLoginOtp = async (email) => {

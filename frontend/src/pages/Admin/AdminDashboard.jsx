@@ -14,7 +14,7 @@ import bgImg from '../images/admin.jpg'
 
 export default function AdminDashboard() {
   useScrollReveal()
-  const { user, role } = useAuth()
+  const { user, role, loading: authLoading } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const navigate = useNavigate()
@@ -45,29 +45,64 @@ export default function AdminDashboard() {
   const loadDashboardData = useCallback(async () => {
     setLoading(true)
     try {
+      // Execute all dashboard queries in parallel to drastically improve loading speed and responsiveness
+      const [
+        statsRes,
+        ngosRes,
+        opsRes,
+        settingsRes,
+        locsRes,
+        feedsRes
+      ] = await Promise.allSettled([
+        api.get('/admin/stats'),
+        api.get('/admin/ngos'),
+        api.get('/admin/operations'),
+        api.get('/admin/contact-settings'),
+        api.get('/public/locations'),
+        api.get('/admin/feedbacks')
+      ])
+
       // 1. Stats
-      const { data: statsData } = await api.get('/admin/stats')
-      setStats(statsData)
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value.data)
+      } else {
+        console.error('Error loading admin stats:', statsRes.reason)
+      }
 
       // 2. NGOs pending verification
-      const { data: ngosData } = await api.get('/admin/ngos')
-      setNgos(ngosData || [])
+      if (ngosRes.status === 'fulfilled') {
+        setNgos(ngosRes.value.data || [])
+      } else {
+        console.error('Error loading admin NGOs:', ngosRes.reason)
+      }
 
       // 3. Operations for moderation
-      const { data: opsData } = await api.get('/admin/operations')
-      setOperations(opsData || { campaigns: [], donations: [], rescues: [], users: [], ngos: [] })
+      if (opsRes.status === 'fulfilled') {
+        setOperations(opsRes.value.data || { campaigns: [], donations: [], rescues: [], users: [], ngos: [] })
+      } else {
+        console.error('Error loading admin operations:', opsRes.reason)
+      }
 
       // 4. Contact settings
-      const { data: settingsData } = await api.get('/admin/contact-settings')
-      setContactSettings(settingsData || { contact_email: '', contact_phone: '', contact_network: '' })
+      if (settingsRes.status === 'fulfilled') {
+        setContactSettings(settingsRes.value.data || { contact_email: '', contact_phone: '', contact_network: '' })
+      } else {
+        console.error('Error loading admin contact settings:', settingsRes.reason)
+      }
 
       // 5. Locations list
-      const { data: locsData } = await api.get('/public/locations')
-      setLocations(locsData || [])
+      if (locsRes.status === 'fulfilled') {
+        setLocations(locsRes.value.data || [])
+      } else {
+        console.error('Error loading locations:', locsRes.reason)
+      }
 
       // 6. Feedbacks & Complaints
-      const { data: feedsData } = await api.get('/admin/feedbacks')
-      setFeedbackData(feedsData || { testimonials: [], contactMessages: [], complaints: [] })
+      if (feedsRes.status === 'fulfilled') {
+        setFeedbackData(feedsRes.value.data || { testimonials: [], contactMessages: [], complaints: [] })
+      } else {
+        console.error('Error loading admin feedbacks:', feedsRes.reason)
+      }
 
     } catch (err) {
       console.error('Error loading admin dashboard data:', err)
@@ -77,12 +112,13 @@ export default function AdminDashboard() {
   }, [])
 
   useEffect(() => {
+    if (authLoading) return
     if (!user || role !== 'admin') {
       navigate('/')
       return
     }
     loadDashboardData()
-  }, [user, role, loadDashboardData, navigate])
+  }, [user, role, authLoading, loadDashboardData, navigate])
 
   // NGO Verification handlers
   const handleVerifyNgo = async (ngoId, verified) => {
@@ -213,6 +249,14 @@ export default function AdminDashboard() {
   const selectClass = isDark
     ? "px-4 py-2.5 rounded-xl bg-[#0F0F2A] border border-white/10 text-white text-sm focus:outline-none focus:border-[#3D6A53] transition-all"
     : "px-4 py-2.5 rounded-xl bg-[#F9FAFF] border border-[#13221B]/20 text-[#1E1B4B] text-sm focus:outline-none focus:border-[#3D6A53] transition-all"
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={36} className="text-[#3D6A53] animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="page-enter">
@@ -372,6 +416,15 @@ export default function AdminDashboard() {
                           <Globe size={18} />
                         </div>
                       </div>
+                    </div>
+                  )}
+                  {activeTab === 'stats' && !stats && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3 reveal">
+                      <AlertOctagon size={36} className="text-red-500" />
+                      <p className={textMuted}>Failed to gather system metrics.</p>
+                      <button onClick={loadDashboardData} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white text-xs font-bold hover:shadow-md transition-all">
+                        Retry Loading
+                      </button>
                     </div>
                   )}
 

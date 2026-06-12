@@ -120,7 +120,11 @@ async function getMyDonations(req, res) {
   try {
     const donations = await prisma.donation.findMany({
       where: { recipientNgoId: req.user.id },
-      include: { items: true, donor: { select: { id: true, name: true } } },
+      include: {
+        items: true,
+        donor: { select: { id: true, name: true, phoneNumber: true } },
+        donorNgo: { select: { id: true, name: true, phoneNumber: true } }
+      },
       orderBy: { createdAt: "desc" },
     });
     return res.json(donations);

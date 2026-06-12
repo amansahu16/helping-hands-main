@@ -16,7 +16,7 @@ import bgImg from '../images/NGO_bg.jpg'
 
 export default function NGODashboard() {
   useScrollReveal()
-  const { user, role, login } = useAuth()
+  const { user, role, loading, updateUser } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const navigate = useNavigate()
@@ -102,12 +102,13 @@ export default function NGODashboard() {
   }, [user])
 
   useEffect(() => {
+    if (loading) return
     if (!user || role !== 'ngo') {
       navigate('/')
       return
     }
     loadNgoData()
-  }, [user, role, loadNgoData, navigate])
+  }, [user, role, loading, loadNgoData, navigate])
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0]
@@ -135,7 +136,7 @@ export default function NGODashboard() {
     try {
       const { data } = await api.put('/ngos/me/profile', profileForm)
       setProfileSuccess(true)
-      login(data, role)
+      updateUser(data)
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
       alert(err.response?.data?.message || 'Profile update failed')
@@ -262,6 +263,14 @@ export default function NGODashboard() {
   const selectClass = isDark
     ? "px-4 py-2.5 rounded-xl bg-[#0F0F2A] border border-white/10 text-white text-sm focus:outline-none focus:border-[#3D6A53] transition-all"
     : "px-4 py-2.5 rounded-xl bg-[#F9FAFF] border border-[#13221B]/20 text-[#1E1B4B] text-sm focus:outline-none focus:border-[#3D6A53] transition-all"
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={36} className="text-[#3D6A53] animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="page-enter">
@@ -616,7 +625,14 @@ export default function NGODashboard() {
                               <div className="flex justify-between items-start gap-2 flex-wrap">
                                 <div>
                                   <h4 className={`font-semibold text-sm ${textTitle}`}>{d.title || `${d.category} Donation`}</h4>
-                                  <p className={`text-[10px] ${textMuted}`}>Donor: <strong className={textTitle}>{d.donor?.name || 'Anonymous'}</strong></p>
+                                  <p className={`text-[10px] ${textMuted}`}>
+                                    Donor: <strong className={textTitle}>{d.donor?.name || d.donorNgo?.name || 'Anonymous'}</strong>
+                                    {(d.donor?.phoneNumber || d.donorNgo?.phoneNumber) && (
+                                      <span className="ml-1.5">
+                                        (📞 <strong className={textTitle}>{d.donor?.phoneNumber || d.donorNgo?.phoneNumber}</strong>)
+                                      </span>
+                                    )}
+                                  </p>
                                 </div>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
                                     d.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
@@ -630,11 +646,24 @@ export default function NGODashboard() {
                               <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
                                 <span>📦 Category: <strong className={textTitle}>{d.category}</strong></span>
                                 <span>🔢 Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
-                                {d.location && <span className="sm:col-span-2">📍 Pickup/Drop Location: <strong className={textTitle}>{d.location}</strong></span>}
+                                {d.location && <span className="sm:col-span-2">📍 Location: <strong className={textTitle}>{d.location}</strong></span>}
+                                {d.pickupAddress && <span className="sm:col-span-2">🏠 Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
                               </div>
 
                               {/* Status updating actions */}
                               <div className="flex flex-wrap gap-2 justify-end mt-1">
+                                {(d.status !== 'DELIVERED' && d.status !== 'CANCELLED') && (d.location || d.pickupAddress) && (
+                                  <a
+                                    href={d.latitude && d.longitude
+                                      ? `https://www.google.com/maps/dir/?api=1&destination=${d.latitude},${d.longitude}`
+                                      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(d.pickupAddress || d.location)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3.5 py-1.5 rounded-lg bg-[#3D6A53] hover:bg-[#2E7D59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer mr-auto"
+                                  >
+                                    <Navigation size={11} /> Get Directions
+                                  </a>
+                                )}
                                 {d.status === 'PENDING' && (
                                   <button onClick={() => handleUpdateDonationStatus(d.id, 'ACCEPTED')} className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-[#2E7D59] hover:bg-green-500/20 text-[11px] font-bold">Accept Request</button>
                                 )}

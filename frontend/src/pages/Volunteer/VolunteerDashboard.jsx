@@ -24,7 +24,7 @@ function calculateAge(dobString) {
 
 export default function VolunteerDashboard() {
   useScrollReveal()
-  const { user, role, login } = useAuth()
+  const { user, role, loading, updateUser } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const navigate = useNavigate()
@@ -129,12 +129,13 @@ export default function VolunteerDashboard() {
   }, [user])
 
   useEffect(() => {
+    if (loading) return
     if (!user) {
       navigate('/')
       return
     }
     loadUserData()
-  }, [user, loadUserData, navigate])
+  }, [user, loading, loadUserData, navigate])
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0]
@@ -164,7 +165,7 @@ export default function VolunteerDashboard() {
       const { data } = await api.put('/users', profileForm)
       setProfileSuccess(true)
       // Update local storage auth user
-      login(data, role)
+      updateUser(data)
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
       alert(err.response?.data?.message || 'Profile update failed')
@@ -566,6 +567,14 @@ export default function VolunteerDashboard() {
   const selectClass = isDark
     ? "px-4 py-2.5 rounded-xl bg-[#0F0F2A] border border-white/10 text-white text-sm focus:outline-none focus:border-[#3D6A53] transition-all"
     : "px-4 py-2.5 rounded-xl bg-[#F9FAFF] border border-[#13221B]/20 text-[#1E1B4B] text-sm focus:outline-none focus:border-[#3D6A53] transition-all"
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={36} className="text-[#3D6A53] animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="page-enter">

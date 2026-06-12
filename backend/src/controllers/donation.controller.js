@@ -98,7 +98,8 @@ async function updateDonation(req, res) {
   try {
     const donation = await prisma.donation.findUnique({ where: { id: req.params.id } });
     if (!donation) return res.status(404).json({ message: "Donation not found" });
-    if (donation.donorId !== req.user.id) return res.status(403).json({ message: "Forbidden" });
+    const isDonor = (donation.donorId === req.user.id) || (donation.donorNgoId === req.user.id);
+    if (!isDonor) return res.status(403).json({ message: "Forbidden" });
     if (donation.status !== "PENDING") {
       return res.status(409).json({ message: "Can only edit PENDING donations" });
     }
@@ -120,7 +121,8 @@ async function deleteDonation(req, res) {
   try {
     const donation = await prisma.donation.findUnique({ where: { id: req.params.id } });
     if (!donation) return res.status(404).json({ message: "Donation not found" });
-    if (donation.donorId !== req.user.id) return res.status(403).json({ message: "Forbidden" });
+    const isDonor = (donation.donorId === req.user.id) || (donation.donorNgoId === req.user.id);
+    if (!isDonor) return res.status(403).json({ message: "Forbidden" });
     if (donation.status !== "PENDING") {
       return res.status(409).json({ message: "Can only cancel PENDING donations" });
     }
@@ -212,7 +214,8 @@ async function verifyOtp(req, res) {
     const { otp } = req.body;
     const donation = await prisma.donation.findUnique({ where: { id: req.params.id } });
     if (!donation) return res.status(404).json({ message: "Donation not found" });
-    if (donation.donorId !== req.user.id) {
+    const isDonor = (donation.donorId === req.user.id) || (donation.donorNgoId === req.user.id);
+    if (!isDonor) {
       return res.status(403).json({ message: "Only the donor can verify the OTP" });
     }
 
