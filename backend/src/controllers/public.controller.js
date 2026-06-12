@@ -125,12 +125,12 @@ async function getLocationById(req, res) {
 
 async function getStats(req, res) {
   try {
-    const donationsCount = await prisma.donation.count().catch(() => 0);
-    const animalsCount = await prisma.rescueRequest.count({
-      where: { status: "RESOLVED" }
-    }).catch(() => 0);
-    const ngosCount = await prisma.ngo.count().catch(() => 0);
-    const volunteersCount = await prisma.user.count().catch(() => 0);
+    const [donationsCount, animalsCount, ngosCount, volunteersCount] = await Promise.all([
+      prisma.donation.count().catch(() => 0),
+      prisma.rescueRequest.count({ where: { status: "RESOLVED" } }).catch(() => 0),
+      prisma.ngo.count().catch(() => 0),
+      prisma.user.count().catch(() => 0)
+    ]);
 
     return res.json({
       success: true,
@@ -201,23 +201,12 @@ async function getLeaderboard(req, res) {
 
 async function getAnimalStats(req, res) {
   try {
-    const rescued = await prisma.rescueRequest.count({
-      where: { status: { in: ["RESOLVED", "CLOSED"] } }
-    });
-    const adopted = await prisma.adoption.count({
-      where: { status: "COMPLETED" }
-    });
-    const fed = await prisma.campaign.count({
-      where: {
-        type: "ANIMAL_WELFARE",
-        status: "COMPLETED"
-      }
-    });
-    const shelters = await prisma.ngo.count({
-      where: {
-        areaOfWork: "Animal Welfare"
-      }
-    });
+    const [rescued, adopted, fed, shelters] = await Promise.all([
+      prisma.rescueRequest.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }).catch(() => 0),
+      prisma.adoption.count({ where: { status: "COMPLETED" } }).catch(() => 0),
+      prisma.campaign.count({ where: { type: "ANIMAL_WELFARE", status: "COMPLETED" } }).catch(() => 0),
+      prisma.ngo.count({ where: { areaOfWork: "Animal Welfare" } }).catch(() => 0)
+    ]);
 
     return res.json({
       rescued,

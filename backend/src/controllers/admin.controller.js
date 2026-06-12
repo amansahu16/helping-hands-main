@@ -123,48 +123,56 @@ async function verifyLoginOtp(req, res) {
 
 async function getStats(req, res) {
   try {
-    // 1. Core Counts
-    const donationsCount = await prisma.donation.count();
-    const animalsCount = await prisma.animal.count();
-    const ngosCount = await prisma.ngo.count();
-    const usersCount = await prisma.user.count();
-    const campaignsCount = await prisma.campaign.count();
-    const complaintsCount = await prisma.complaint.count();
-
-    // 2. Rescue request counts
-    const openRescues = await prisma.rescueRequest.count({ where: { status: "OPEN" } });
-    const activeRescues = await prisma.rescueRequest.count({ where: { status: "ASSIGNED" } });
-    const resolvedRescues = await prisma.rescueRequest.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } });
-
-    // 3. Campaign specific counts
-    const completedCampaigns = await prisma.campaign.count({ where: { status: "COMPLETED" } });
-    const ongoingCampaigns = await prisma.campaign.count({ where: { status: "ONGOING" } });
-    const plannedCampaigns = await prisma.campaign.count({ where: { status: "PLANNED" } });
-
-    // 4. Animal welfare specific stats
-    const adoptedAnimals = await prisma.adoption.count({ where: { status: "COMPLETED" } });
-    const animalsFed = await prisma.campaign.count({
-      where: {
-        type: "ANIMAL_WELFARE",
-        status: "COMPLETED",
-      },
-    });
-
-    // 5. Circulated goods value (donations processed or delivered)
-    const activeDonationsCount = await prisma.donation.count({
-      where: { status: { in: ["ACCEPTED", "PICKED_UP", "DELIVERED"] } }
-    });
-
-    // 6. Monetary Transactions stats
-    const transactionStats = await prisma.donation.aggregate({
-      where: {
-        amount: { not: null }
-      },
-      _count: true,
-      _sum: {
-        amount: true
-      }
-    });
+    const [
+      donationsCount,
+      animalsCount,
+      ngosCount,
+      usersCount,
+      campaignsCount,
+      complaintsCount,
+      openRescues,
+      activeRescues,
+      resolvedRescues,
+      completedCampaigns,
+      ongoingCampaigns,
+      plannedCampaigns,
+      adoptedAnimals,
+      animalsFed,
+      activeDonationsCount,
+      transactionStats
+    ] = await Promise.all([
+      prisma.donation.count(),
+      prisma.animal.count(),
+      prisma.ngo.count(),
+      prisma.user.count(),
+      prisma.campaign.count(),
+      prisma.complaint.count(),
+      prisma.rescueRequest.count({ where: { status: "OPEN" } }),
+      prisma.rescueRequest.count({ where: { status: "ASSIGNED" } }),
+      prisma.rescueRequest.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }),
+      prisma.campaign.count({ where: { status: "COMPLETED" } }),
+      prisma.campaign.count({ where: { status: "ONGOING" } }),
+      prisma.campaign.count({ where: { status: "PLANNED" } }),
+      prisma.adoption.count({ where: { status: "COMPLETED" } }),
+      prisma.campaign.count({
+        where: {
+          type: "ANIMAL_WELFARE",
+          status: "COMPLETED",
+        },
+      }),
+      prisma.donation.count({
+        where: { status: { in: ["ACCEPTED", "PICKED_UP", "DELIVERED"] } }
+      }),
+      prisma.donation.aggregate({
+        where: {
+          amount: { not: null }
+        },
+        _count: true,
+        _sum: {
+          amount: true
+        }
+      })
+    ]);
 
     return res.json({
       core: {
@@ -239,11 +247,13 @@ async function verifyNgo(req, res) {
 
 async function listOperations(req, res) {
   try {
-    const campaigns = await prisma.campaign.findMany({ include: { organizerUser: { select: { name: true } }, organizerNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } });
-    const donations = await prisma.donation.findMany({ include: { donor: { select: { name: true } }, donorNgo: { select: { name: true } }, recipientNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } });
-    const rescues = await prisma.rescueRequest.findMany({ include: { reporter: { select: { name: true } } }, orderBy: { createdAt: "desc" } });
-    const users = await prisma.user.findMany({ select: { id: true, name: true, email: true, phoneNumber: true, createdAt: true }, orderBy: { createdAt: "desc" } });
-    const ngos = await prisma.ngo.findMany({ select: { id: true, name: true, email: true, registrationNumber: true, verified: true, createdAt: true }, orderBy: { createdAt: "desc" } });
+    const [campaigns, donations, rescues, users, ngos] = await Promise.all([
+      prisma.campaign.findMany({ include: { organizerUser: { select: { name: true } }, organizerNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
+      prisma.donation.findMany({ include: { donor: { select: { name: true } }, donorNgo: { select: { name: true } }, recipientNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
+      prisma.rescueRequest.findMany({ include: { reporter: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
+      prisma.user.findMany({ select: { id: true, name: true, email: true, phoneNumber: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
+      prisma.ngo.findMany({ select: { id: true, name: true, email: true, registrationNumber: true, verified: true, createdAt: true }, orderBy: { createdAt: "desc" } })
+    ]);
 
     return res.json({ campaigns, donations, rescues, users, ngos });
   } catch (err) {
@@ -366,17 +376,19 @@ async function deleteLocation(req, res) {
 
 async function listFeedbacks(req, res) {
   try {
-    const testimonials = await prisma.testimonial.findMany({
-      include: { user: { select: { name: true, email: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-    const contactMessages = await prisma.contactMessage.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    const complaints = await prisma.complaint.findMany({
-      include: { reporter: { select: { name: true, email: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    const [testimonials, contactMessages, complaints] = await Promise.all([
+      prisma.testimonial.findMany({
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.contactMessage.findMany({
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.complaint.findMany({
+        include: { reporter: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+      })
+    ]);
 
     return res.json({ testimonials, contactMessages, complaints });
   } catch (err) {
