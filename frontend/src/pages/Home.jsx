@@ -362,6 +362,67 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ══ STATS SECTION ════════════════════════════════════════ */}
+      <section className="py-10 relative -mt-16 z-20 max-w-[1200px] mx-auto px-4 sm:px-6">
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-6 p-8 rounded-3xl border backdrop-blur-md transition-all duration-300 ${
+          isDark
+            ? 'bg-gradient-to-r from-[#16201B] to-[#0E1512] border-[#2E7D59]/20 shadow-[0_8px_30px_rgba(0,0,0,0.4)]'
+            : 'bg-white border-[#2E7D59]/12 shadow-[0_8px_30px_rgba(19,34,27,0.06)]'
+        }`}>
+          {/* Stat 1: Volunteers */}
+          <div className="flex flex-col items-center text-center p-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
+              isDark ? 'bg-[#43E97B]/10 text-[#43E97B] border border-[#43E97B]/20' : 'bg-[#13221B]/5 text-[#13221B] border border-[#13221B]/10'
+            }`}>
+              <Users size={24} />
+            </div>
+            <div className={`font-['Poppins'] font-black text-3xl md:text-4xl mb-1 ${isDark ? 'text-white' : 'text-[#13221B]'}`}>
+              <Counter target={stats.volunteers || 0} suffix="+" />
+            </div>
+            <p className={`text-xs font-semibold tracking-wider uppercase ${mutedText}`}>Volunteers</p>
+          </div>
+
+          {/* Stat 2: NGOs */}
+          <div className="flex flex-col items-center text-center p-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
+              isDark ? 'bg-[#43E97B]/10 text-[#43E97B] border border-[#43E97B]/20' : 'bg-[#13221B]/5 text-[#13221B] border border-[#13221B]/10'
+            }`}>
+              <Building size={24} />
+            </div>
+            <div className={`font-['Poppins'] font-black text-3xl md:text-4xl mb-1 ${isDark ? 'text-white' : 'text-[#13221B]'}`}>
+              <Counter target={stats.ngos || 0} suffix="+" />
+            </div>
+            <p className={`text-xs font-semibold tracking-wider uppercase ${mutedText}`}>Partner NGOs</p>
+          </div>
+
+          {/* Stat 3: Animals Rescued */}
+          <div className="flex flex-col items-center text-center p-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
+              isDark ? 'bg-[#43E97B]/10 text-[#43E97B] border border-[#43E97B]/20' : 'bg-[#13221B]/5 text-[#13221B] border border-[#13221B]/10'
+            }`}>
+              <PawPrint size={24} />
+            </div>
+            <div className={`font-['Poppins'] font-black text-3xl md:text-4xl mb-1 ${isDark ? 'text-white' : 'text-[#13221B]'}`}>
+              <Counter target={stats.animals || 0} suffix="+" />
+            </div>
+            <p className={`text-xs font-semibold tracking-wider uppercase ${mutedText}`}>Animals Rescued</p>
+          </div>
+
+          {/* Stat 4: Donations Made */}
+          <div className="flex flex-col items-center text-center p-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
+              isDark ? 'bg-[#43E97B]/10 text-[#43E97B] border border-[#43E97B]/20' : 'bg-[#13221B]/5 text-[#13221B] border border-[#13221B]/10'
+            }`}>
+              <Package size={24} />
+            </div>
+            <div className={`font-['Poppins'] font-black text-3xl md:text-4xl mb-1 ${isDark ? 'text-white' : 'text-[#13221B]'}`}>
+              <Counter target={stats.donations || 0} suffix="+" />
+            </div>
+            <p className={`text-xs font-semibold tracking-wider uppercase ${mutedText}`}>Donations Made</p>
+          </div>
+        </div>
+      </section>
+
       {/* ══ FEATURES ══════════════════════════════════════════════ */}
       <section className={`py-24 relative ${sectionA}`}>
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6">

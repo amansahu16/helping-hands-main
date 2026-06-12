@@ -13,8 +13,11 @@ const requireAdmin = (req, res, next) => {
 };
 
 // Public Admin Auth
-router.post("/register", adminController.registerAdmin);
-router.post("/login",    adminController.loginAdmin);
+router.post("/login",            adminController.loginAdmin);
+router.post("/verify-login-otp", adminController.verifyLoginOtp);
+
+// Secure Admin Registration (Only existing admins can create new admins)
+router.post("/register",         requireAuth, requireAdmin, adminController.registerAdmin);
 
 // Settings (Public get, admin update)
 router.get("/contact-settings", adminController.getContactSettings);

@@ -47,6 +47,21 @@ export function AuthProvider({ children }) {
 
   const loginAdmin = async ({ email, password }) => {
     const { data } = await api.post('/admin/login', { email, password })
+    if (data.requiresOtp) {
+      return data
+    }
+    const u = data.user || data
+    const token = data.token
+    if (token) localStorage.setItem('hh_token', token)
+    localStorage.setItem('hh_user', JSON.stringify(u))
+    localStorage.setItem('hh_role', 'admin')
+    setUser(u)
+    setRole('admin')
+    return u
+  }
+
+  const verifyOtpAdmin = async (email, otp) => {
+    const { data } = await api.post('/admin/verify-login-otp', { email, otp })
     const u = data.user || data
     const token = data.token
     if (token) localStorage.setItem('hh_token', token)
@@ -102,7 +117,7 @@ export function AuthProvider({ children }) {
       user, role, loading,
       loginUser, loginNgo, loginAdmin,
       registerUser, registerNgo, registerAdmin,
-      verifyOtpUser, verifyOtpNgo,
+      verifyOtpUser, verifyOtpNgo, verifyOtpAdmin,
       logout, updateUser,
     }}>
       {children}

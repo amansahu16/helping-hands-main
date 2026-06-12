@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
+import { sendAdminLoginOtp, verifyOtp } from "../services/otp.service.js";
 
 // Helper functions for JWT
 function signToken(payload) {
@@ -71,6 +72,36 @@ async function loginAdmin(req, res) {
     const valid = await comparePassword(password, admin.passwordHash);
     if (!valid) return res.status(401).json({ message: "Invalid admin credentials" });
 
+    // Send login OTP instead of generating token immediately
+    await sendAdminLoginOtp(admin.email);
+
+    return res.json({
+      success: true,
+      requiresOtp: true,
+      email: admin.email,
+    });
+  } catch (err) {
+    console.error("loginAdmin error:", err);
+    return res.status(500).json({ message: "Login failed", error: err.message });
+  }
+}
+
+async function verifyLoginOtp(req, res) {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const admin = await prisma.admin.findUnique({ where: { email } });
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    const valid = await verifyOtp(email, otp);
+    if (!valid) {
+      return res.status(400).json({ message: "Invalid or expired verification code." });
+    }
+
     const token = signToken({ id: admin.id, role: "admin" });
     return res.json({
       token,
@@ -83,8 +114,8 @@ async function loginAdmin(req, res) {
       },
     });
   } catch (err) {
-    console.error("loginAdmin error:", err);
-    return res.status(500).json({ message: "Login failed", error: err.message });
+    console.error("verifyLoginOtp error:", err);
+    return res.status(500).json({ message: "OTP verification failed", error: err.message });
   }
 }
 
@@ -411,6 +442,7 @@ async function reportComplaint(req, res) {
 export const adminController = {
   registerAdmin,
   loginAdmin,
+  verifyLoginOtp,
   getStats,
   listNgos,
   verifyNgo,

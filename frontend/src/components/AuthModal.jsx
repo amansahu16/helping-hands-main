@@ -124,7 +124,7 @@ function PhotoPicker({ value, onChange, label = 'Upload Photo', accept = 'image/
 
 // ── OTP Step ──────────────────────────────────────────────────
 function OtpStep({ email, onVerify, onBack, role, isDark }) {
-  const { verifyOtpUser, verifyOtpNgo } = useAuth()
+  const { verifyOtpUser, verifyOtpNgo, verifyOtpAdmin } = useAuth()
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -135,11 +135,17 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
     if (otp.length !== 6) { setError('Enter the 6-digit OTP'); return }
     setLoading(true); setError('')
     try {
-      role === 'user' ? await verifyOtpUser(email, otp) : await verifyOtpNgo(email, otp)
+      if (role === 'user') {
+        await verifyOtpUser(email, otp)
+      } else if (role === 'ngo') {
+        await verifyOtpNgo(email, otp)
+      } else if (role === 'admin') {
+        await verifyOtpAdmin(email, otp)
+      }
       setSuccess(true)
       setTimeout(() => onVerify(), 1200)
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP. Use 123456 for testing.')
+      setError(err.response?.data?.message || 'Invalid OTP. (OTP sent to your email)')
     } finally { setLoading(false) }
   }
 
@@ -242,7 +248,13 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
     setError(''); setSuccess(''); setStep('form')
   }
 
-  const switchTab = (t2) => { setTab(t2); resetForm() }
+  const switchTab = (t2) => {
+    setTab(t2)
+    resetForm()
+    if (t2 === 'register' && role === 'admin') {
+      setRole('user')
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -257,7 +269,14 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
         } else if (role === 'ngo') {
           await loginNgo(payload)
         } else if (role === 'admin') {
-          await loginAdmin(payload)
+          const res = await loginAdmin(payload)
+          if (res && res.requiresOtp) {
+            setPendingEmail(form.email)
+            setStep('otp')
+            setSuccess('Verification code sent to your email!')
+            setLoading(false)
+            return
+          }
           navigate('/admin/dashboard')
         }
         setSuccess('Welcome back! 🎉')
@@ -322,9 +341,14 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
   const afterOtpVerified = () => {
     setStep('form')
-    setTab('login')
-    setForm(f => ({ ...f, password: '' }))
-    setSuccess('Account created! Please sign in.')
+    if (role === 'admin') {
+      onClose()
+      navigate('/admin/dashboard')
+    } else {
+      setTab('login')
+      setForm(f => ({ ...f, password: '' }))
+      setSuccess('Account created! Please sign in.')
+    }
   }
 
   // Styles based on theme
@@ -399,7 +423,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
               {[
                 { id: 'user', icon: <User size={15} />, label: 'User' },
                 { id: 'ngo', icon: <Building2 size={15} />, label: 'NGO' },
-                { id: 'admin', icon: <Shield size={15} />, label: 'Admin' }
+                ...(tab === 'login' ? [{ id: 'admin', icon: <Shield size={15} />, label: 'Admin' }] : [])
               ].map(r => (
                 <button
                   key={r.id}
