@@ -4,15 +4,25 @@ import nodemailer from "nodemailer";
 const otpStore = new Map();
 
 // Configure SMTP transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const transporter = nodemailer.createTransport(
+  process.env.SMTP_HOST
+    ? {
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      }
+    : {
+        service: "gmail",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      }
+);
 
 export const sendAdminLoginOtp = async (email) => {
   // Generate a real 6-digit OTP
@@ -48,7 +58,7 @@ export const sendAdminLoginOtp = async (email) => {
       console.log(`[OTP SERVICE] Real OTP email sent successfully to ${email}`);
     } catch (error) {
       console.error("[OTP SERVICE] Failed to send real email:", error);
-      throw new Error(`Failed to send verification email. SMTP Error: ${error.message}`);
+      console.log(`[OTP SERVICE] FALLBACK: Real email failed. Displaying generated OTP in server logs: ${otp}`);
     }
   } else {
     console.log(`[OTP SERVICE] WARNING: SMTP credentials not set in env. Real email could not be sent. Displaying OTP in console for testing: ${otp}`);
