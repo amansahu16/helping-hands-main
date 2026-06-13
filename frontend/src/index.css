@@ -533,7 +533,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── Page Hero Faded Glass Cards ───────────────────────────── */
 .page-hero-bg>div.max-w-\[700px\],
 .page-hero-bg>div.max-w-\[800px\],
-.page-hero-bg>div.max-w-\[800px\] {
+.page-hero-bg>div.max-w-\[1100px\] {
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(12px);
@@ -549,7 +549,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   .page-hero-bg>div.max-w-\[700px\],
   .page-hero-bg>div.max-w-\[800px\],
-  .page-hero-bg>div.max-w-\[800px\] {
+  .page-hero-bg>div.max-w-\[1100px\] {
     padding: 2.5rem 2rem;
     margin-left: auto;
     margin-right: auto;

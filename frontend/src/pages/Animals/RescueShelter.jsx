@@ -16,8 +16,8 @@ function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
 // ── Overpass OSM search ───────────────────────────────────────
@@ -46,8 +46,8 @@ async function findNearbyVetAndShelters(lat, lon, radiusKm = 10) {
   return (data.elements || []).map(el => {
     const elLat = el.lat || el.center?.lat
     const elLon = el.lon || el.center?.lon
-    const dist  = haversine(lat, lon, elLat, elLon)
-    const type  = el.tags?.amenity === 'veterinary' || el.tags?.shop === 'veterinary'
+    const dist = haversine(lat, lon, elLat, elLon)
+    const type = el.tags?.amenity === 'veterinary' || el.tags?.shop === 'veterinary'
       ? 'Veterinary Clinic' : 'Animal Shelter'
     return {
       id: el.id,
@@ -137,7 +137,7 @@ function ShelterMap({ shelters, userLat, userLon }) {
       // User marker
       const userIcon = L.divIcon({
         html: `<div style="width:14px;height:14px;background:#43E97B;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(67,233,123,0.3)"></div>`,
-        iconSize:[14,14], iconAnchor:[7,7], className:''
+        iconSize: [14, 14], iconAnchor: [7, 7], className: ''
       })
       L.marker([userLat, userLon], { icon: userIcon }).addTo(map).bindPopup('<b>Your Location</b>')
     })
@@ -155,11 +155,11 @@ function ShelterMap({ shelters, userLat, userLon }) {
         const iconHtml = s.isVerifiedPartner
           ? `<div style="background:rgba(46,125,89,0.2);border:2.5px solid #2E7D59;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 10px rgba(46,125,89,0.4)">✨</div>`
           : `<div style="background:rgba(61,106,83,0.25);border:2px solid rgba(61,106,83,0.7);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">${s.type === 'Veterinary Clinic' ? '🏥' : '🐾'}</div>`
-        
+
         const icon = L.divIcon({
           html: iconHtml,
-          iconSize: s.isVerifiedPartner ? [38,38] : [34,34],
-          iconAnchor: s.isVerifiedPartner ? [19,19] : [17,17],
+          iconSize: s.isVerifiedPartner ? [38, 38] : [34, 34],
+          iconAnchor: s.isVerifiedPartner ? [19, 19] : [17, 17],
           className: ''
         })
         const m = L.marker([s.lat, s.lon], { icon })
@@ -168,7 +168,7 @@ function ShelterMap({ shelters, userLat, userLon }) {
             <div style="font-family:Inter,sans-serif;min-width:170px;padding:2px">
               <b style="color:#1a1a3e;font-size:13px">${s.name}</b><br/>
               <span style="color:#3D6A53;font-size:11px;font-weight:600">${s.type}</span><br/>
-              ${s.isVerifiedPartner ? '<span style="display:inline-block;background:rgba(46,125,89,0.1);color:#2E7D59;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(46,125,89,0.2);margin-top:3px;margin-bottom:3px">✨ Verified Partner</span><br/>' : ''}
+              ${s.isVerifiedPartner ? '<span style="display:inline-block;background:rgba(46,125,89,0.1);color:#2E7D59;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(46,125,89,0.2);margin-top:3px;margin-bottom:3px"> Verified Partner</span><br/>' : ''}
               <span style="color:#666;font-size:11px">${s.distance.toFixed(1)} km away</span><br/>
               <div style="margin-top:6px">
                 <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${s.lat},${s.lon}" target="_blank" style="color:#2E7D59;font-size:12px;font-weight:600;text-decoration:none">Get Directions →</a>
@@ -198,7 +198,7 @@ function ShelterCard({ shelter, userLat, userLon, isDark }) {
     <div className={`border rounded-2xl p-4 hover:-translate-y-1 transition-all duration-200 ${cardBg}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{shelter.isVerifiedPartner ? '✨' : (isVet ? '🏥' : '🐾')}</span>
+          <span className="text-xl">{shelter.isVerifiedPartner ? '' : (isVet ? '' : '')}</span>
           <div>
             <p className={`font-semibold text-sm ${textPrimary}`}>{shelter.name}</p>
             <p className="text-[#3D6A53] text-xs font-medium">{shelter.type}</p>
@@ -283,7 +283,7 @@ function PhotoPicker({ photos, onChange, isDark }) {
         {photos.map((p, i) => (
           <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-white/10">
             <img src={p} alt="" className="w-full h-full object-contain" />
-            <button type="button" onClick={() => onChange(prev => prev.filter((_,j) => j !== i))}
+            <button type="button" onClick={() => onChange(prev => prev.filter((_, j) => j !== i))}
               className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 flex items-center justify-center">
               <X size={8} className="text-white" />
             </button>
@@ -462,8 +462,8 @@ export default function RescueShelter() {
     }
   }
 
-  const animalTypes = ['Dog','Cat','Bird','Cow','Monkey','Horse','Snake','Other']
-  const conditions  = ['Injured','Sick','Malnourished','Abandoned','Trapped','Aggressive','For Adoption','Other']
+  const animalTypes = ['Dog', 'Cat', 'Bird', 'Cow', 'Monkey', 'Horse', 'Snake', 'Other']
+  const conditions = ['Injured', 'Sick', 'Malnourished', 'Abandoned', 'Trapped', 'Aggressive', 'For Adoption', 'Other']
 
   const [AuthModal, setAuthModalComp] = useState(null)
   React.useEffect(() => {
@@ -485,7 +485,7 @@ export default function RescueShelter() {
   const heroText = isDark ? 'text-white' : 'text-[#1E1B4B]'
   const subText = isDark ? 'text-[#BBBBD8]' : 'text-[#4338CA]'
   const textMuted = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
-  
+
   const formCardBg = isDark ? 'bg-[#16163A] border-white/8' : 'bg-white border-[#E0E7FF] shadow-md'
   const sidebarCardBg = isDark ? 'bg-[#16163A] border-[#3D6A53]/20' : 'bg-white border-[#E0E7FF] shadow-md'
   const sidebarGuideBg = isDark ? 'bg-[#16163A] border-white/8' : 'bg-white border-[#E0E7FF] shadow-md'
@@ -496,7 +496,7 @@ export default function RescueShelter() {
         <AuthModal open={authModal} onClose={() => setAuthModal(false)} initialTab="login" />
       )}
 
-      <section 
+      <section
         className="page-hero-bg pt-32 pb-16 text-center relative overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(var(--hero-overlay-start), var(--hero-overlay-end)), url(${bgImg})`,
@@ -521,7 +521,7 @@ export default function RescueShelter() {
           {user?.role === 'ngo' && (
             <div className="mb-12">
               <h2 className={`font-['Poppins'] font-black text-3xl mb-2 flex items-center gap-2 ${heroText}`}>
-                <span>🚨</span> Urgent <span className="gradient-text">Open Rescues</span>
+                <span></span> Urgent <span className="gradient-text">Open Rescues</span>
               </h2>
               <p className={`text-sm mb-6 ${textMuted}`}>Below are active rescue reports from citizens. If you are a rescue center or NGO, please claim these cases to help save them.</p>
 
@@ -544,13 +544,11 @@ export default function RescueShelter() {
                           handleClaimRescue(rescue.id)
                         }
                       }}
-                      className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 ${
-                        user?.role === 'ngo'
-                          ? 'cursor-pointer hover:scale-[1.02] hover:border-[#3D6A53] hover:shadow-[0_4px_20px_rgba(61,106,83,0.15)]'
-                          : ''
-                      } ${
-                        isDark ? 'bg-[#16163A] border-white/8 hover:border-[#3D6A53]/30' : 'bg-white border-[#E0E7FF] hover:border-[#3D6A53]/40 shadow-sm'
-                      }`}
+                      className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 ${user?.role === 'ngo'
+                        ? 'cursor-pointer hover:scale-[1.02] hover:border-[#3D6A53] hover:shadow-[0_4px_20px_rgba(61,106,83,0.15)]'
+                        : ''
+                        } ${isDark ? 'bg-[#16163A] border-white/8 hover:border-[#3D6A53]/30' : 'bg-white border-[#E0E7FF] hover:border-[#3D6A53]/40 shadow-sm'
+                        }`}
                     >
                       <div>
                         {rescue.photos && rescue.photos.length > 0 ? (
@@ -675,7 +673,7 @@ export default function RescueShelter() {
                           onChange={(val) => setForm(f => ({ ...f, location: val }))}
                           onSelectLocation={async ({ locationStr, latitude, longitude }) => {
                             setForm(f => ({ ...f, location: locationStr, latitude, longitude }))
-                            
+
                             // ── Immediately fetch nearby shelters ──────────────
                             setShelterPreviewLoading(true)
                             try {
@@ -712,7 +710,7 @@ export default function RescueShelter() {
                       {(shelterPreviewLoading || sheltersPreview.length > 0) && (
                         <div className={`mt-3 border rounded-2xl p-4 ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-lg">🗺️</span>
+                            <span className="text-lg"></span>
                             <p className={`font-semibold text-sm ${heroText}`}>Nearby Animal Help Centers</p>
                             <span className={`ml-auto text-xs ${textMuted}`}>(within 10 km)</span>
                           </div>
@@ -762,7 +760,7 @@ export default function RescueShelter() {
                         ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting…</>
                         : isForAdoption
                           ? <><Heart size={16} className="fill-white" /> List for Adoption <ArrowRight size={16} /></>
-                          : <>🚨 Submit Rescue Request <ArrowRight size={16} /></>
+                          : <> Submit Rescue Request <ArrowRight size={16} /></>
                       }
                     </button>
 
@@ -777,7 +775,7 @@ export default function RescueShelter() {
                 <div className={`border rounded-3xl p-8 text-center ${isDark ? 'bg-[#16163A] border-[#43E97B]/30' : 'bg-white border-green-200 shadow-md'}`}>
                   <CheckCircle size={52} className="text-[#43E97B] mx-auto mb-4" />
                   <h3 className={`font-['Poppins'] font-bold text-2xl mb-2 ${heroText}`}>
-                    {isForAdoption ? 'Listed for Adoption! ❤️' : 'Rescue Reported! 🐾'}
+                    {isForAdoption ? 'Listed for Adoption!' : 'Rescue Reported!'}
                   </h3>
                   <p className={`mb-4 ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'}`}>
                     {isForAdoption
@@ -788,7 +786,7 @@ export default function RescueShelter() {
 
                   {/* Notification message */}
                   <div className={`p-4 rounded-xl mb-5 text-left ${isDark ? 'bg-[#13221B]/20 border border-[#3D6A53]/25' : 'bg-[#EEF2FF] border border-[#C7D2FE]'}`}>
-                    <p className="text-[#43E97B] font-semibold text-sm mb-1">📢 NGOs & Volunteers Notified</p>
+                    <p className="text-[#43E97B] font-semibold text-sm mb-1"> NGOs & Volunteers Notified</p>
                     <p className={`text-xs leading-relaxed ${textMuted}`}>
                       Registered NGOs, shelters, and volunteers within 10 km of your location have been notified. They will see your report, photos, and location in their dashboard.
                     </p>
@@ -796,7 +794,7 @@ export default function RescueShelter() {
 
                   {isNear && (
                     <div className="p-4 rounded-xl bg-[#3D6A53]/10 border border-[#3D6A53]/30 text-left mb-4">
-                      <p className="text-[#FF8FA3] font-semibold text-sm">🚨 A rescue center is within 2 km of you!</p>
+                      <p className="text-[#FF8FA3] font-semibold text-sm"> A rescue center is within 2 km of you!</p>
                       <p className="text-[#3D6A53]/70 text-xs mt-1">Please stay with the animal — a rescue team may reach you soon. Call the nearest center below.</p>
                     </div>
                   )}
@@ -806,7 +804,7 @@ export default function RescueShelter() {
                     </div>
                   ) : shelters.length > 0 ? (
                     <div className="text-left mt-4">
-                      <p className={`font-bold text-sm mb-3 ${heroText}`}>📍 Nearest Animal Help Centers:</p>
+                      <p className={`font-bold text-sm mb-3 ${heroText}`}> Nearest Animal Help Centers:</p>
                       <div className="grid sm:grid-cols-2 gap-3">
                         {shelters.map(s => (
                           <ShelterCard
@@ -831,12 +829,12 @@ export default function RescueShelter() {
             {/* Sidebar */}
             <div className="lg:col-span-2 flex flex-col gap-5 reveal-right">
               <div className={`border rounded-2xl p-5 ${sidebarCardBg}`}>
-                <h4 className={`font-['Poppins'] font-bold text-base mb-3 ${heroText}`}>📞 Emergency Contacts</h4>
+                <h4 className={`font-['Poppins'] font-bold text-base mb-3 ${heroText}`}> Emergency Contacts</h4>
                 {[
-                  { name:'Wildlife SOS India',   phone:'9871963535', type:'Wildlife' },
-                  { name:'Animal Helpline (PFA)', phone:'44074477',   type:'General' },
-                  { name:'SPCA Animal Helpline',  phone:'25561000',   type:'General' },
-                  { name:'Police Animal Cell',    phone:'100',        type:'Emergency' },
+                  { name: 'Wildlife SOS India', phone: '9871963535', type: 'Wildlife' },
+                  { name: 'Animal Helpline (PFA)', phone: '44074477', type: 'General' },
+                  { name: 'SPCA Animal Helpline', phone: '25561000', type: 'General' },
+                  { name: 'Police Animal Cell', phone: '100', type: 'Emergency' },
                 ].map((c, i) => (
                   <div key={i} className={`flex items-center justify-between py-2.5 border-b last:border-0 ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
                     <div>
@@ -864,12 +862,12 @@ export default function RescueShelter() {
               <div className={`border rounded-2xl p-5 ${sidebarGuideBg}`}>
                 <h4 className={`font-['Poppins'] font-bold text-sm mb-3 ${heroText}`}>What to do while waiting</h4>
                 {[
-                  '🛡️ Keep distance from aggressive animals',
-                  '💧 Offer water if the animal is thirsty',
-                  '🌡️ Provide shade if injured/overheated',
-                  '📸 Take photos for the rescue team',
-                  '📍 Mark exact GPS location to share',
-                  '🤫 Speak calmly and avoid loud noises',
+                  ' Keep distance from aggressive animals',
+                  ' Offer water if the animal is thirsty',
+                  ' Provide shade if injured/overheated',
+                  ' Take photos for the rescue team',
+                  ' Mark exact GPS location to share',
+                  ' Speak calmly and avoid loud noises',
                 ].map((tip, i) => (
                   <p key={i} className={`text-xs py-1.5 border-b last:border-0 ${isDark ? 'text-[#7777AA] border-white/5' : 'text-[#6366F1] border-gray-100'}`}>{tip}</p>
                 ))}

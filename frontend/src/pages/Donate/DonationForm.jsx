@@ -235,16 +235,12 @@ export default function DonationForm() {
   const conditions = ['New', 'Like New', 'Good', 'Fair']
 
   const pickupTypes = [
-    { val: 'PICKUP', label: '📍 Pickup from me' },
-    { val: 'DROPOFF', label: "🚚 I'll drop off" },
-    { val: 'BOTH', label: '🔄 Either works' },
+    { val: 'PICKUP', label: ' Pickup from me' },
+    { val: 'DROPOFF', label: " I'll drop off" },
+    { val: 'BOTH', label: ' Either works' },
   ]
 
-  const features = [
-    { icon: '🗓️', title: 'Easy Scheduling', desc: 'Arrange pickup/drop-off at your convenience.' },
-    { icon: '✅', title: 'Verified Recipients', desc: 'Items go to pre-screened families and shelters.' },
-    { icon: '📊', title: 'Real-Time Tracking', desc: 'Track your donation status every step of the way.' },
-  ]
+
 
   const faqs = [
     { q: 'What items can I donate?', a: 'Clothes, food (non-perishable and sealed), household goods, books, toys, and more.' },
@@ -305,7 +301,7 @@ export default function DonationForm() {
                 <div className={`border rounded-3xl p-10 text-center ${cardBg} ${isDark ? 'border-[#43E97B]/30' : 'border-green-200 shadow-lg'}`}>
                   <CheckCircle size={52} className="text-[#43E97B] mx-auto mb-4" />
                   <h3 className={`font-['Poppins'] font-bold text-2xl mb-2 ${heroText}`}>
-                    Donation Listed! 🎉
+                    Donation Listed!
                   </h3>
                   <p className={mutedText}>
                     Your item has been listed. Redirecting to listings…
@@ -388,7 +384,7 @@ export default function DonationForm() {
                         </button>
                       </div>
                       {gpsError && <p className="text-[#FF8FA3] text-xs">{gpsError}</p>}
-                      {form.latitude && <p className="text-[#43E97B] text-xs">📍 GPS location captured</p>}
+                      {form.latitude && <p className="text-[#43E97B] text-xs"> GPS location captured</p>}
                     </div>
                   </div>
 
@@ -435,22 +431,7 @@ export default function DonationForm() {
 
             {/* Sidebar — 2 cols */}
             <div className="lg:col-span-2 flex flex-col gap-5 reveal-right">
-              <div className={`border rounded-2xl p-6 ${cardBg}`}>
-                <h3 className={`font-['Poppins'] font-bold text-base mb-4 ${heroText}`}>
-                  Why Donate Here?
-                </h3>
-                <div className="flex flex-col gap-4">
-                  {features.map((f, i) => (
-                    <div key={i} className="flex gap-3">
-                      <span className="text-2xl shrink-0">{f.icon}</span>
-                      <div>
-                        <p className={`font-semibold text-sm ${heroText}`}>{f.title}</p>
-                        <p className={`text-xs leading-relaxed ${mutedText}`}>{f.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
 
               <div className={`border rounded-2xl p-6 ${cardBg}`}>
                 <h3 className={`font-['Poppins'] font-bold text-base mb-4 ${heroText}`}>FAQ</h3>

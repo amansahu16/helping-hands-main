@@ -56,13 +56,13 @@ export default function Footer() {
             <p className={`text-sm leading-relaxed mb-5 ${textMuted}`}>Connecting hearts, transforming communities through compassion and action.</p>
             <div className={`flex flex-col gap-2 text-sm ${textMuted}`}>
               <a href="mailto:amansahuat799959@gmail.com" className={`flex items-center gap-2 ${textHover} transition-colors`}>
-                <Mail size={14} className="text-[#13221B]" /> amansahuat799959@gmail.com
+                <Mail size={14} className="text-[#13221w]" /> amansahuat799959@gmail.com
               </a>
               <a href="tel:+916267718876" className={`flex items-center gap-2 ${textHover} transition-colors`}>
-                <Phone size={14} className="text-[#13221B]" /> +91 62677 18876
+                <Phone size={14} className="text-[#13221w]" /> +91 62677 18876
               </a>
               <span className="flex items-center gap-2">
-                <MapPin size={14} className="text-[#13221B]" /> Bharat
+                <MapPin size={14} className="text-[#13221w]" /> Bharat
               </span>
             </div>
           </div>

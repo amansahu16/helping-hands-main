@@ -365,8 +365,8 @@ export default function Home() {
       {/* ══ STATS SECTION ════════════════════════════════════════ */}
       <section className="py-6 relative -mt-12 z-20 max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 p-5 rounded-2xl border backdrop-blur-md transition-all duration-300 ${isDark
-            ? 'bg-gradient-to-r from-[#16201B] to-[#0E1512] border-[#2E7D59]/20 shadow-[0_8px_30px_rgba(0,0,0,0.4)]'
-            : 'bg-white border-[#2E7D59]/12 shadow-[0_8px_30px_rgba(19,34,27,0.06)]'
+          ? 'bg-gradient-to-r from-[#16201B] to-[#0E1512] border-[#2E7D59]/20 shadow-[0_8px_30px_rgba(0,0,0,0.4)]'
+          : 'bg-white border-[#2E7D59]/12 shadow-[0_8px_30px_rgba(19,34,27,0.06)]'
           }`}>
           {/* Stat 1: Volunteers */}
           <div className="flex items-center gap-3 p-2 justify-center">
@@ -579,7 +579,7 @@ export default function Home() {
                 ) : (
                   <div className="divide-y divide-white/5 space-y-3">
                     {leaderboard.map((u, i) => {
-                      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`
+                      const medal = i === 0 ? '' : i === 1 ? '' : i === 2 ? '' : `${i + 1}`
                       const medalColor = i === 0 ? 'text-[#FFD700]' : i === 1 ? 'text-[#C0C0C0]' : i === 2 ? 'text-[#CD7F32]' : 'text-slate-400'
                       return (
                         <div key={u.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
