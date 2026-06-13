@@ -63,13 +63,13 @@ export default function StartCampaign() {
   ]
 
   // Theme-aware styles
-  const heroText  = isDark ? 'text-white' : 'text-[#1E1B4B]'
-  const subText   = isDark ? 'text-[#BBBBD8]' : 'text-[#4338CA]'
+  const heroText = isDark ? 'text-white' : 'text-[#1E1B4B]'
+  const subText = isDark ? 'text-[#BBBBD8]' : 'text-[#4338CA]'
   const mutedText = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
   const sectionBg = isDark ? 'bg-[#07071A]' : 'bg-[#F0F4FF]'
-  const cardBg    = isDark ? 'bg-[#16163A] border-white/8' : 'bg-white border-[#E0E7FF] shadow-sm'
-  const selectBg  = isDark ? 'bg-[#0F0F2A] border-white/10 text-white' : 'bg-[#F9FAFF] border-[#13221B]/20 text-[#1E1B4B]'
-  
+  const cardBg = isDark ? 'bg-[#16163A] border-white/8' : 'bg-white border-[#E0E7FF] shadow-sm'
+  const selectBg = isDark ? 'bg-[#0F0F2A] border-white/10 text-white' : 'bg-[#F9FAFF] border-[#13221B]/20 text-[#1E1B4B]'
+
   const labelClass = `text-xs font-semibold ${isDark ? 'text-[#8888AA]' : 'text-[#4338CA]'}`
   const inputClass = isDark
     ? "px-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-[#555577] text-sm focus:outline-none focus:border-[#13221B] transition-all"
@@ -77,7 +77,7 @@ export default function StartCampaign() {
 
   return (
     <div className="page-enter">
-      <section 
+      <section
         className="page-hero-bg pt-32 pb-16 text-center relative overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(var(--hero-overlay-start), var(--hero-overlay-end)), url(${bgImg})`,
@@ -104,7 +104,7 @@ export default function StartCampaign() {
               {success ? (
                 <div className={`border rounded-3xl p-10 text-center ${cardBg} ${isDark ? 'border-[#43E97B]/30' : 'border-green-200 shadow-lg'}`}>
                   <CheckCircle size={52} className="text-[#43E97B] mx-auto mb-4" />
-                  <h3 className={`font-['Poppins'] font-bold text-2xl mb-2 ${heroText}`}>Campaign Submitted! 🎉</h3>
+                  <h3 className={`font-['Poppins'] font-bold text-2xl mb-2 ${heroText}`}>Campaign Submitted! </h3>
                   <p className={mutedText}>Your campaign is under review. Once approved, it'll be visible to volunteers near you.</p>
                 </div>
               ) : (
@@ -183,7 +183,7 @@ export default function StartCampaign() {
               ))}
 
               <div className={`border rounded-2xl p-5 ${cardBg}`}>
-                <h4 className={`font-['Poppins'] font-semibold text-sm mb-3 ${heroText}`}>Inspired by These 🌟</h4>
+                <h4 className={`font-['Poppins'] font-semibold text-sm mb-3 ${heroText}`}>Inspired by These </h4>
                 {pastCampaigns.map((c, i) => (
                   <div key={i} className="mb-3 pb-3 border-b border-white/5 last:border-0">
                     <p className={`font-semibold text-xs ${heroText}`}>{c.title}</p>

@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api/axios'
 import LocationAutocomplete from './LocationAutocomplete'
+import { LogoIcon } from './Logo'
 
 // ── GPS location helper ───────────────────────────────────────
 function useGPS() {
@@ -293,8 +294,8 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
           return;
         }
 
-        if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(form.password)) {
-          setError('Password must be exactly 8 characters long and contain both letters and numbers.');
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(form.password)) {
+          setError('Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_.');
           setLoading(false);
           return;
         }
@@ -376,7 +377,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
         {/* Logo */}
         <div className="text-center mb-5">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#13221B] to-[#3D6A53] mb-3 shadow-[0_0_24px_rgba(108,99,255,0.35)]">
-            <span className="text-white text-xl">🤝</span>
+            <LogoIcon size={32} />
           </div>
           <h2 className={`font-['Poppins'] font-bold text-xl ${headingClass}`}>
             {step === 'otp' ? 'Verify Email' : tab === 'login' ? 'Welcome Back' : 'Join Helping Hands'}
@@ -445,7 +446,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
             {/* NGO Register redirect notice */}
             {tab === 'register' && role === 'ngo' && (
               <div className={`mb-4 p-4 rounded-2xl border ${isDark ? 'bg-[#13221B]/10 border-[#13221B]/30' : 'bg-[#EEF2FF] border-[#13221B]/25'}`}>
-                <p className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>🏢 Registering as an NGO?</p>
+                <p className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>Registering as an NGO?</p>
                 <p className={`text-xs mb-3 ${isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'}`}>
                   NGO registration requires additional details like your registration number, area of work, and organization description. Please use our dedicated NGO registration page.
                 </p>
@@ -509,7 +510,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
                   <label className={labelClass}>Password *</label>
                   <div className="relative">
                     <input name="password" type={showPw ? 'text' : 'password'} value={form.password} onChange={change}
-                      required placeholder="Create a strong password" className={`${inputClass} pr-11`} />
+                      required minLength={8} maxLength={16} placeholder="Create a strong password" className={`${inputClass} pr-11`} />
                     <button type="button" onClick={() => setShowPw(s => !s)}
                       className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-[#555577] hover:text-[#2E7D59]' : 'text-[#A5B4FC] hover:text-[#13221B]'}`}>
                       {showPw ? <EyeOff size={17} /> : <Eye size={17} />}

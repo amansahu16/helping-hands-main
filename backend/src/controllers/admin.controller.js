@@ -30,8 +30,8 @@ async function registerAdmin(req, res) {
       return res.status(400).json({ message: "Phone number must be exactly 10 digits" });
     }
 
-    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(password)) {
-      return res.status(400).json({ message: "Password must be exactly 8 characters long and alphanumeric" });
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(password)) {
+      return res.status(400).json({ message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*__." });
     }
 
     const exists = await prisma.admin.findUnique({ where: { email } });

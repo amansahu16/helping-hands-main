@@ -183,6 +183,10 @@ export default function VolunteerDashboard() {
       setPasswordError('Please fill all password fields')
       return
     }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(passwordForm.newPassword)) {
+      setPasswordError('New password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_.')
+      return
+    }
     try {
       await api.put('/users/password', passwordForm)
       setPasswordSuccess('Password updated successfully!')
@@ -218,7 +222,7 @@ export default function VolunteerDashboard() {
       setParticipants(data || [])
       const initialCodes = {}
       data.forEach(p => {
-        initialCodes[p.id] = p.code || `V-${campaign.name.substring(0,3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`
+        initialCodes[p.id] = p.code || `V-${campaign.name.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`
       })
       setCodes(initialCodes)
     } catch (err) {
@@ -441,7 +445,7 @@ export default function VolunteerDashboard() {
       ctx.textAlign = 'right'
       ctx.fillStyle = '#FFFFFF'
       ctx.font = isBold ? 'bold 12px "Inter", -apple-system, sans-serif' : '12px "Inter", -apple-system, sans-serif'
-      
+
       let displayVal = val || 'N/A'
       if (ctx.measureText(displayVal).width > 240) {
         while (ctx.measureText(displayVal + '...').width > 240 && displayVal.length > 0) {
@@ -512,7 +516,7 @@ export default function VolunteerDashboard() {
     ctx.quadraticCurveTo(rx, ry, rx + radius, ry)
     ctx.closePath()
     ctx.fill()
-    
+
     ctx.strokeStyle = 'rgba(67, 233, 123, 0.35)'
     ctx.lineWidth = 1
     ctx.stroke()
@@ -579,7 +583,7 @@ export default function VolunteerDashboard() {
   return (
     <div className="page-enter">
       {/* Hero Section */}
-      <section 
+      <section
         className="page-hero-bg pt-32 pb-16 text-center relative overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(var(--hero-overlay-start), var(--hero-overlay-end)), url(${bgImg})`,
@@ -603,9 +607,8 @@ export default function VolunteerDashboard() {
         <div className="max-w-[1250px] mx-auto px-4 sm:px-6">
 
           {/* Points Highlight Card */}
-          <div className={`mb-10 p-6 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-6 reveal shadow-md ${
-            isDark ? 'bg-[#16163A]/80 border-[#3D6A53]/30' : 'bg-white border-[#C7D2FE]'
-          }`}>
+          <div className={`mb-10 p-6 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-6 reveal shadow-md ${isDark ? 'bg-[#16163A]/80 border-[#3D6A53]/30' : 'bg-white border-[#C7D2FE]'
+            }`}>
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#43E97B] to-[#13221B] flex items-center justify-center text-white shadow-lg shrink-0">
                 <Award size={36} />
@@ -765,7 +768,7 @@ export default function VolunteerDashboard() {
                             </div>
                             <div className="flex flex-col gap-1.5">
                               <label className={`text-xs font-bold ${textMuted}`}>New Password</label>
-                              <input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} className={inputClass} />
+                              <input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} minLength={8} maxLength={16} className={inputClass} />
                             </div>
                           </div>
 
@@ -802,15 +805,14 @@ export default function VolunteerDashboard() {
                         ) : (
                           <div className="flex flex-col gap-4">
                             {myOrganized.map(c => (
-                              <div key={c.id} className={`p-4 rounded-xl border flex flex-wrap justify-between items-center gap-3 transition-colors ${
-                                selectedCampaignForManage?.id === c.id
-                                  ? 'bg-[#13221B]/5 border-[#3D6A53]'
-                                  : isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
-                              }`}>
+                              <div key={c.id} className={`p-4 rounded-xl border flex flex-wrap justify-between items-center gap-3 transition-colors ${selectedCampaignForManage?.id === c.id
+                                ? 'bg-[#13221B]/5 border-[#3D6A53]'
+                                : isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
+                                }`}>
                                 <div className="flex-1 min-w-[200px]">
                                   <h4 className={`font-semibold text-sm ${textTitle}`}>{c.name}</h4>
                                   <p className={`text-[11px] mt-0.5 ${textMuted}`}>
-                                    📍 {c.location} • 📅 {c.timeFrom ? new Date(c.timeFrom).toLocaleDateString() : 'TBD'}
+                                    {c.location} • {c.timeFrom ? new Date(c.timeFrom).toLocaleDateString() : 'TBD'}
                                   </p>
                                   <p className="text-[10px] text-[#43E97B] font-bold mt-1">
                                     {c.currentParticipants || 0} approved volunteers
@@ -825,13 +827,12 @@ export default function VolunteerDashboard() {
                                   </button>
                                   <button
                                     onClick={() => handleManageCampaign(c)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                                      selectedCampaignForManage?.id === c.id
-                                        ? 'bg-[#13221B] border-[#13221B] text-white'
-                                        : 'border-[#13221B]/20 text-[#2E7D59] hover:bg-[#13221B]/5'
-                                    }`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${selectedCampaignForManage?.id === c.id
+                                      ? 'bg-[#13221B] border-[#13221B] text-white'
+                                      : 'border-[#13221B]/20 text-[#2E7D59] hover:bg-[#13221B]/5'
+                                      }`}
                                   >
-                                    👥 Manage Volunteers
+                                    Manage Volunteers
                                   </button>
                                 </div>
                               </div>
@@ -874,17 +875,16 @@ export default function VolunteerDashboard() {
                                         <h4 className={`font-bold text-sm ${textTitle}`}>{v?.name}</h4>
                                         <p className={`text-xs ${textMuted}`}>{v?.occupation || 'Volunteer'} • Age: {ageVal}</p>
                                       </div>
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
-                                        p.status === 'APPROVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${p.status === 'APPROVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
                                         p.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-red-500/10 text-red-400'
-                                      }`}>
+                                        }`}>
                                         {p.status}
                                       </span>
                                     </div>
                                     <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
-                                      <span>📧 Email: <strong className={textTitle}>{v?.email}</strong></span>
-                                      <span>📞 Phone: <strong className={textTitle}>{v?.phoneNumber || 'N/A'}</strong></span>
-                                      <span className="sm:col-span-2">📍 Location: <strong className={textTitle}>{v?.location || 'N/A'}</strong></span>
+                                      <span> Email: <strong className={textTitle}>{v?.email}</strong></span>
+                                      <span> Phone: <strong className={textTitle}>{v?.phoneNumber || 'N/A'}</strong></span>
+                                      <span className="sm:col-span-2"> Location: <strong className={textTitle}>{v?.location || 'N/A'}</strong></span>
                                     </div>
 
                                     {p.status === 'PENDING' ? (
@@ -936,15 +936,14 @@ export default function VolunteerDashboard() {
                                 <div key={j.id} className={`p-4 rounded-xl border flex flex-col gap-2 ${isDark ? 'bg-white/[0.01] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                                   <div className="flex justify-between items-start gap-2">
                                     <h4 className={`font-semibold text-sm ${textTitle}`}>{c?.name}</h4>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase shrink-0 ${
-                                      j.status === 'APPROVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase shrink-0 ${j.status === 'APPROVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
                                       j.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-red-500/10 text-red-400'
-                                    }`}>
+                                      }`}>
                                       {j.status}
                                     </span>
                                   </div>
                                   <p className={`text-[10px] ${textMuted}`}>
-                                    📍 {c?.location} • 📅 {c?.timeFrom ? new Date(c.timeFrom).toLocaleDateString() : 'TBD'}
+                                    {c?.location} •  {c?.timeFrom ? new Date(c.timeFrom).toLocaleDateString() : 'TBD'}
                                   </p>
 
                                   {j.status === 'APPROVED' && (
@@ -988,23 +987,22 @@ export default function VolunteerDashboard() {
                                   <h4 className={`font-semibold text-sm ${textTitle}`}>{d.title || `Donation of ${d.category}`}</h4>
                                   <p className={`text-[10px] ${textMuted}`}>NGO Recipient: <strong className={textTitle}>{d.recipientNgo?.name || 'Any Verified NGO'}</strong></p>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                                  d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
                                   d.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-red-500/10 text-red-400'
-                                }`}>
+                                  }`}>
                                   {d.status}
                                 </span>
                               </div>
 
                               <div className={`grid sm:grid-cols-3 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
-                                <span>📦 Category: <strong className={textTitle}>{d.category}</strong></span>
+                                <span>Category: <strong className={textTitle}>{d.category}</strong></span>
                                 {d.category === 'MONEY' ? (
-                                  <span>💰 Amount: <strong className="text-[#43E97B] font-black">₹{d.amount}</strong></span>
+                                  <span>Amount: <strong className="text-[#43E97B] font-black">₹{d.amount}</strong></span>
                                 ) : (
-                                  <span>🔢 Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
+                                  <span>Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
                                 )}
-                                <span>📍 Location: <strong className={textTitle}>{d.location || 'N/A'}</strong></span>
-                                {d.pickupAddress && <span className="sm:col-span-3">🏠 Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
+                                <span>Location: <strong className={textTitle}>{d.location || 'N/A'}</strong></span>
+                                {d.pickupAddress && <span className="sm:col-span-3"> Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
                               </div>
 
                               {d.pickupType === 'VOLUNTEER' && d.status === 'ACCEPTED' && (
@@ -1012,16 +1010,16 @@ export default function VolunteerDashboard() {
                                   <div className="flex justify-between items-center flex-wrap gap-2">
                                     <div>
                                       <p className={`font-bold text-[#FFB347]`}>
-                                        {d.reachedDonor ? '🚨 NGO Volunteer Has Reached!' : '🚗 Volunteer Pickup Scheduled'}
+                                        {d.reachedDonor ? ' NGO Volunteer Has Reached!' : ' Volunteer Pickup Scheduled'}
                                       </p>
                                       <p className={textMuted}>
-                                        {d.reachedDonor 
-                                          ? 'Ask the volunteer for their OTP code to verify pickup.' 
+                                        {d.reachedDonor
+                                          ? 'Ask the volunteer for their OTP code to verify pickup.'
                                           : 'When the volunteer meets you, they will share their OTP.'}
                                       </p>
                                     </div>
                                   </div>
-                                  
+
                                   {d.reachedDonor && (
                                     <div className="flex items-center gap-2 mt-1">
                                       <input
@@ -1060,7 +1058,7 @@ export default function VolunteerDashboard() {
                                     onClick={() => handleDownloadReceipt(d)}
                                     className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-[#2E7D59] hover:bg-green-500/20 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                                   >
-                                    📥 Download Receipt
+                                    Download Receipt
                                   </button>
                                 </div>
                               )}
@@ -1095,51 +1093,49 @@ export default function VolunteerDashboard() {
                                   <h4 className={`font-semibold text-sm ${textTitle}`}>{r.animalType || 'Animal'} Rescue Request</h4>
                                   <p className={`text-[10px] ${textMuted}`}>Assigned NGO: <strong className={textTitle}>{r.nearbyCenter?.name || 'Searching Nearby shelter...'}</strong></p>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                                  r.status === 'RESOLVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${r.status === 'RESOLVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
                                   r.status === 'CLOSED' ? 'bg-red-500/10 text-red-400' :
-                                  r.status === 'ASSIGNED' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
-                                }`}>
-                                  {r.status === 'RESOLVED' ? 'RESOLVED (SUCCESS)' : 
-                                   r.status === 'CLOSED' ? 'CLOSED (UNSUCCESSFUL)' : 
-                                   r.status === 'ASSIGNED' ? 'NGO DISPATCHED' : 
-                                   'PENDING CLAIM'}
+                                    r.status === 'ASSIGNED' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
+                                  }`}>
+                                  {r.status === 'RESOLVED' ? 'RESOLVED (SUCCESS)' :
+                                    r.status === 'CLOSED' ? 'CLOSED (UNSUCCESSFUL)' :
+                                      r.status === 'ASSIGNED' ? 'NGO DISPATCHED' :
+                                        'PENDING CLAIM'}
                                 </span>
                               </div>
 
                               <p className={`text-xs leading-relaxed ${textTitle}`}>{r.description}</p>
 
                               <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
-                                <span>🩺 Condition: <strong className={textTitle}>{r.condition || 'N/A'}</strong></span>
-                                <span>📍 Location: <strong className={textTitle}>{r.location || 'N/A'}</strong></span>
-                                {r.nearbyHospital && <span className="sm:col-span-2">🏥 Nearby Hospital: <strong className={textTitle}>{r.nearbyHospital}</strong></span>}
+                                <span> Condition: <strong className={textTitle}>{r.condition || 'N/A'}</strong></span>
+                                <span> Location: <strong className={textTitle}>{r.location || 'N/A'}</strong></span>
+                                {r.nearbyHospital && <span className="sm:col-span-2"> Nearby Hospital: <strong className={textTitle}>{r.nearbyHospital}</strong></span>}
                               </div>
 
                               {/* Operation Status Notification Banner */}
-                              <div className={`p-3 rounded-xl border text-[11px] leading-normal ${
-                                r.status === 'RESOLVED' ? 'bg-[#43E97B]/10 border-[#43E97B]/20 text-[#43E97B]' :
+                              <div className={`p-3 rounded-xl border text-[11px] leading-normal ${r.status === 'RESOLVED' ? 'bg-[#43E97B]/10 border-[#43E97B]/20 text-[#43E97B]' :
                                 r.status === 'CLOSED' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                r.status === 'ASSIGNED' ? 'bg-[#FFB347]/10 border-[#FFB347]/20 text-[#FFB347]' :
-                                'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                              }`}>
+                                  r.status === 'ASSIGNED' ? 'bg-[#FFB347]/10 border-[#FFB347]/20 text-[#FFB347]' :
+                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                }`}>
                                 {r.status === 'RESOLVED' && (
                                   <p className="flex items-center gap-1.5 font-bold">
-                                    <span>🎉</span> Rescue Operation Successful! {r.nearbyCenter?.name || 'The NGO'} has successfully resolved this case and the animal is now safe.
+                                    <span></span> Rescue Operation Successful! {r.nearbyCenter?.name || 'The NGO'} has successfully resolved this case and the animal is now safe.
                                   </p>
                                 )}
                                 {r.status === 'CLOSED' && (
                                   <p className="flex items-center gap-1.5 font-bold">
-                                    <span>⚠️</span> Rescue Operation Closed: The rescue case was closed/unsuccessful (the animal could not be found or was already relocated).
+                                    <span></span> Rescue Operation Closed: The rescue case was closed/unsuccessful (the animal could not be found or was already relocated).
                                   </p>
                                 )}
                                 {r.status === 'ASSIGNED' && (
                                   <p className="flex items-center gap-1.5 font-bold">
-                                    <span>🚨</span> NGO Dispatched: {r.nearbyCenter?.name || 'An NGO'} has claimed this rescue request and their team is en route! {r.nearbyCenter?.phoneNumber ? `(Phone: ${r.nearbyCenter.phoneNumber})` : ''}
+                                    <span></span> NGO Dispatched: {r.nearbyCenter?.name || 'An NGO'} has claimed this rescue request and their team is in route! {r.nearbyCenter?.phoneNumber ? `(Phone: ${r.nearbyCenter.phoneNumber})` : ''}
                                   </p>
                                 )}
                                 {r.status === 'OPEN' && (
                                   <p className="flex items-center gap-1.5">
-                                    <span>⏳</span> Pending: Your report is live. Registered NGOs & shelters within 10 km have been alerted.
+                                    <span></span> Pending: Your report is live. Registered NGOs & shelters within 10 km have been alerted.
                                   </p>
                                 )}
                               </div>
@@ -1185,10 +1181,9 @@ export default function VolunteerDashboard() {
                                 <p className={`text-xs ${textMuted}`}>Category: {a.animal?.category} • Location: {a.animal?.location}</p>
                                 <p className={`text-[10px] mt-1 ${textMuted}`}>Shelter: {a.ngo?.name || 'Verified Shelter Partner'}</p>
                               </div>
-                              <span className={`px-2 py-1 rounded text-[10px] font-black uppercase shrink-0 ${
-                                a.status === 'COMPLETED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                              <span className={`px-2 py-1 rounded text-[10px] font-black uppercase shrink-0 ${a.status === 'COMPLETED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
                                 a.status === 'IN_PROGRESS' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-red-500/10 text-red-400'
-                              }`}>
+                                }`}>
                                 {a.status}
                               </span>
                             </div>
@@ -1262,9 +1257,8 @@ export default function VolunteerDashboard() {
       {/* EDIT DONATION MODAL */}
       {editingDonation && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <form onSubmit={handleEditDonationSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${
-            isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
-          }`}>
+          <form onSubmit={handleEditDonationSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
+            }`}>
             <h3 className={`font-['Poppins'] font-bold text-lg ${textTitle}`}>Edit Donation Details</h3>
 
             <div className="flex flex-col gap-1">
@@ -1304,9 +1298,8 @@ export default function VolunteerDashboard() {
       {/* EDIT RESCUE MODAL */}
       {editingRescue && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <form onSubmit={handleEditRescueSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${
-            isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
-          }`}>
+          <form onSubmit={handleEditRescueSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
+            }`}>
             <h3 className={`font-['Poppins'] font-bold text-lg ${textTitle}`}>Edit Rescue Details</h3>
 
             <div className="flex flex-col gap-1">
@@ -1335,9 +1328,8 @@ export default function VolunteerDashboard() {
       {/* EDIT CAMPAIGN MODAL */}
       {editingCampaign && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <form onSubmit={handleEditCampaignSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${
-            isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
-          }`}>
+          <form onSubmit={handleEditCampaignSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
+            }`}>
             <h3 className={`font-['Poppins'] font-bold text-lg ${textTitle}`}>Edit Campaign details</h3>
 
             <div className="flex flex-col gap-1">

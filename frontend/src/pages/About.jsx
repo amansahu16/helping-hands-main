@@ -10,13 +10,13 @@ export default function About() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const heroText  = isDark ? 'text-white' : 'text-[#1E1B4B]'
-  const subText   = isDark ? 'text-[#BBBBD8]' : 'text-[#4338CA]'
+  const heroText = isDark ? 'text-white' : 'text-[#1E1B4B]'
+  const subText = isDark ? 'text-[#BBBBD8]' : 'text-[#4338CA]'
   const mutedText = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
-  const sectionA  = isDark ? 'bg-[#0F0F2A]' : 'bg-[#F8FAFF]'
-  const sectionB  = isDark ? 'bg-[#07071A]' : 'bg-white'
-  const cardBg    = isDark ? 'bg-[#16163A] border-white/8 hover:border-[#13221B]/30' : 'bg-white border-[#E0E7FF] hover:border-[#13221B]/30 shadow-sm hover:shadow-md'
-  const iconBg    = isDark ? 'bg-[#13221B]/12 border-[#13221B]/20 text-[#2E7D59]' : 'bg-[#EEF2FF] border-[#C7D2FE] text-[#13221B]'
+  const sectionA = isDark ? 'bg-[#0F0F2A]' : 'bg-[#F8FAFF]'
+  const sectionB = isDark ? 'bg-[#07071A]' : 'bg-white'
+  const cardBg = isDark ? 'bg-[#16163A] border-white/8 hover:border-[#13221B]/30' : 'bg-white border-[#E0E7FF] hover:border-[#13221B]/30 shadow-sm hover:shadow-md'
+  const iconBg = isDark ? 'bg-[#13221B]/12 border-[#13221B]/20 text-[#2E7D59]' : 'bg-[#EEF2FF] border-[#C7D2FE] text-[#13221B]'
 
   const [stats, setStats] = useState({
     ngos: 0,
@@ -34,7 +34,7 @@ export default function About() {
       try {
         const { data: mainData } = await api.get('/public/stats')
         const { data: animalData } = await api.get('/public/animal-stats')
-        
+
         if (mainData.success && mainData.data) {
           setStats(s => ({
             ...s,
@@ -53,10 +53,10 @@ export default function About() {
   }, [])
 
   const values = [
-    { icon: <Heart size={22}/>, title: 'Compassion', desc: 'Every decision is guided by empathy for humans and animals alike.' },
-    { icon: <Award size={22}/>, title: 'Transparency', desc: 'Full visibility into where donations go and how campaigns run.' },
-    { icon: <Users size={22}/>, title: 'Community', desc: 'Local, hyperlocal impact. Real people helping real neighbours.' },
-    { icon: <Globe size={22}/>, title: 'Scale', desc: 'From one city to all of India — growing the network of good.' },
+    { icon: <Heart size={22} />, title: 'Compassion', desc: 'Every decision is guided by empathy for humans and animals alike.' },
+    { icon: <Award size={22} />, title: 'Transparency', desc: 'Full visibility into where donations go and how campaigns run.' },
+    { icon: <Users size={22} />, title: 'Community', desc: 'Local, hyperlocal impact. Real people helping real neighbours.' },
+    { icon: <Globe size={22} />, title: 'Scale', desc: 'From one city to all of India — growing the network of good.' },
   ]
 
   const achievements = [

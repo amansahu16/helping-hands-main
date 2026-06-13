@@ -144,11 +144,18 @@ export default function NGODashboard() {
       setLoadingProfile(false)
     }
   }
-
   const handlePasswordUpdate = async (e) => {
     e.preventDefault()
     setPasswordError('')
     setPasswordSuccess('')
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setPasswordError('Please fill all password fields')
+      return
+    }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(passwordForm.newPassword)) {
+      setPasswordError('New password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_.')
+      return
+    }
     try {
       await api.put('/ngos/me/password', passwordForm)
       setPasswordSuccess('Password updated successfully!')
@@ -303,7 +310,7 @@ export default function NGODashboard() {
             <div className="mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 flex items-center justify-between gap-4 animate-pulse">
               <div className="flex items-center gap-2">
                 <Bell size={18} className="shrink-0" />
-                <span className="text-xs font-bold">🚨 EMERGENCY ALERTS: {alertRescues.length} unresolved animal rescues reported nearby!</span>
+                <span className="text-xs font-bold">EMERGENCY ALERTS: {alertRescues.length} unresolved animal rescues reported nearby!</span>
               </div>
               <button onClick={() => setActiveTab('rescues')} className="px-3.5 py-1.5 rounded-xl bg-red-500 text-white text-[10px] font-black uppercase tracking-wider shrink-0">
                 Rescue Now
@@ -500,7 +507,7 @@ export default function NGODashboard() {
                             </div>
                             <div className="flex flex-col gap-1.5">
                               <label className={`text-xs font-bold ${textMuted}`}>New Password</label>
-                              <input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} className={inputClass} />
+                              <input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} minLength={8} maxLength={16} className={inputClass} />
                             </div>
                           </div>
 
@@ -537,11 +544,11 @@ export default function NGODashboard() {
                                     <p className={`text-[10px] ${textMuted}`}>Reported: {new Date(r.createdAt).toLocaleString()}</p>
                                   </div>
                                   <button onClick={() => handleClaimRescue(r.id)} className="px-4 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-all flex items-center gap-1">
-                                    🚨 Claim Rescue
+                                    Claim Rescue
                                   </button>
                                 </div>
                                 <p className={`text-xs ${textTitle}`}><strong>Description:</strong> {r.description}</p>
-                                <p className={`text-xs font-bold ${textTitle}`}>📍 Location: {r.location} {r.distance ? `(${r.distance} km away)` : ''}</p>
+                                <p className={`text-xs font-bold ${textTitle}`}> Location: {r.location} {r.distance ? `(${r.distance} km away)` : ''}</p>
                               </div>
                             ))}
                           </div>
@@ -581,7 +588,7 @@ export default function NGODashboard() {
                                   </div>
                                 </div>
                                 <p className={`text-xs ${textTitle}`}><strong>Details:</strong> {r.description}</p>
-                                <p className={`text-xs font-semibold ${textTitle}`}>📍 Location: {r.location}</p>
+                                <p className={`text-xs font-semibold ${textTitle}`}> Location: {r.location}</p>
                                 <div className="flex flex-wrap gap-2 mt-1">
                                   <a
                                     href={r.latitude && r.longitude
@@ -629,13 +636,13 @@ export default function NGODashboard() {
                                     Donor: <strong className={textTitle}>{d.donor?.name || d.donorNgo?.name || 'Anonymous'}</strong>
                                     {(d.donor?.phoneNumber || d.donorNgo?.phoneNumber) && (
                                       <span className="ml-1.5">
-                                        (📞 <strong className={textTitle}>{d.donor?.phoneNumber || d.donorNgo?.phoneNumber}</strong>)
+                                        ( <strong className={textTitle}>{d.donor?.phoneNumber || d.donorNgo?.phoneNumber}</strong>)
                                       </span>
                                     )}
                                   </p>
                                 </div>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
-                                    d.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
+                                  d.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
                                   }`}>
                                   {d.status}
                                 </span>
@@ -644,10 +651,10 @@ export default function NGODashboard() {
                               <p className={`text-xs ${textTitle}`}><strong>Description/Details:</strong> {d.description}</p>
 
                               <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
-                                <span>📦 Category: <strong className={textTitle}>{d.category}</strong></span>
-                                <span>🔢 Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
-                                {d.location && <span className="sm:col-span-2">📍 Location: <strong className={textTitle}>{d.location}</strong></span>}
-                                {d.pickupAddress && <span className="sm:col-span-2">🏠 Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
+                                <span> Category: <strong className={textTitle}>{d.category}</strong></span>
+                                <span> Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
+                                {d.location && <span className="sm:col-span-2"> Location: <strong className={textTitle}>{d.location}</strong></span>}
+                                {d.pickupAddress && <span className="sm:col-span-2"> Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
                               </div>
 
                               {/* Status updating actions */}
@@ -710,9 +717,9 @@ export default function NGODashboard() {
                               <label className={`text-xs font-bold ${textMuted}`}>Post Type</label>
                               <select value={newPost.postType} onChange={e => setNewPost({ ...newPost, postType: e.target.value })} className={selectClass}>
                                 <option value="GENERAL">General Update</option>
-                                <option value="URGENT">🚨 Urgent Call</option>
-                                <option value="ACHIEVEMENT">🏆 Achievement / Success</option>
-                                <option value="EVENT">📅 Scheduled Event</option>
+                                <option value="URGENT"> Urgent Call</option>
+                                <option value="ACHIEVEMENT"> Achievement / Success</option>
+                                <option value="EVENT"> Scheduled Event</option>
                               </select>
                             </div>
                           </div>

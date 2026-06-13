@@ -286,7 +286,7 @@ export default function Home() {
     <div className="page-enter">
       {role === 'ngo' && user?.areaOfWork === 'Animal Welfare' && ngoRescuesAlertCount > 0 && (
         <div className="bg-red-500 text-white py-3 px-4 text-center text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 relative z-50 animate-pulse">
-          <span>🚨 emergency alert: There are {ngoRescuesAlertCount} open animal rescue requests nearby!</span>
+          <span>emergency alert: There are {ngoRescuesAlertCount} open animal rescue requests nearby!</span>
           <Link to="/ngos/dashboard" className="underline hover:text-red-100 ml-2 font-bold normal-case">Go to Dashboard →</Link>
         </div>
       )}
@@ -322,7 +322,7 @@ export default function Home() {
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#13221B] to-[#3D6A53] flex items-center justify-center text-white text-xs font-bold">
                     {(user.name || user.email || '?').charAt(0).toUpperCase()}
                   </div>
-                  <span className={`text-sm font-semibold ${isDark ? 'text-[#43E97B]' : 'text-green-700'}`}>Welcome back, {user.name?.split(' ')[0] || 'Friend'}! 👋</span>
+                  <span className={`text-sm font-semibold ${isDark ? 'text-[#43E97B]' : 'text-green-700'}`}>Welcome back, {user.name?.split(' ')[0] || 'Friend'}! </span>
                 </div>
               )}
 

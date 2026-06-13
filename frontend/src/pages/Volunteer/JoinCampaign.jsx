@@ -33,7 +33,7 @@ export default function JoinCampaign() {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // 'all', 'cleanup', 'animal_welfare', 'health', 'food_drive'
-  
+
   // Dashboard state
   const [myOrganized, setMyOrganized] = useState([])
   const [myJoined, setMyJoined] = useState([])
@@ -88,7 +88,7 @@ export default function JoinCampaign() {
           })
           setJoinedStatuses(statuses)
         })
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setDashLoading(false))
     } else if (role === 'ngo') {
       // NGO organizes campaigns, but cannot join them
@@ -98,7 +98,7 @@ export default function JoinCampaign() {
           setMyOrganized(list)
           setMyJoined([])
         })
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setDashLoading(false))
     }
   }, [user, role])
@@ -118,13 +118,13 @@ export default function JoinCampaign() {
     }
     try {
       await api.post(`/campaigns/${campaignId}/join`)
-      
+
       // Optimistically update status to PENDING
       setJoinedStatuses(prev => ({
         ...prev,
         [campaignId]: { status: 'PENDING', code: null }
       }))
-      
+
       // Reload dashboard list to reflect the new campaign joined
       loadDashboard()
     } catch (err) {
@@ -139,12 +139,12 @@ export default function JoinCampaign() {
     try {
       const { data } = await api.get(`/campaigns/${campaign.id}/participants`)
       setParticipants(data || [])
-      
+
       // Initialize volunteer codes inputs
       const initialCodes = {}
       data.forEach(p => {
         // Pre-fill with a default code format, e.g., VOL-ORGANIZER_ID-INDEX
-        initialCodes[p.id] = p.code || `V-${campaign.name.substring(0,3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`
+        initialCodes[p.id] = p.code || `V-${campaign.name.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`
       })
       setCodes(initialCodes)
     } catch (err) {
@@ -168,7 +168,7 @@ export default function JoinCampaign() {
         status: 'APPROVED',
         code: codeVal
       })
-      
+
       // Update local participants state
       setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status: 'APPROVED', code: codeVal } : p))
       loadDashboard() // refresh campaign counts
@@ -187,7 +187,7 @@ export default function JoinCampaign() {
       await api.patch(`/campaigns/${selectedCampaignForManage.id}/participants/${participantId}/status`, {
         status: 'REJECTED'
       })
-      
+
       // Update local participants state
       setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status: 'REJECTED' } : p))
       loadDashboard()
@@ -225,7 +225,7 @@ export default function JoinCampaign() {
   return (
     <div className="page-enter">
       {/* Hero Section */}
-      <section 
+      <section
         className="page-hero-bg pt-32 pb-16 text-center relative overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(var(--hero-overlay-start), var(--hero-overlay-end)), url(${bgImg})`,
@@ -286,11 +286,11 @@ export default function JoinCampaign() {
           ) : (
             <div className="flex flex-col gap-10">
               {[
-                { id: 'CLEANUP', label: '🧹 Clean-up Drives' },
-                { id: 'ANIMAL_WELFARE', label: '🐾 Animal Welfare Drives' },
-                { id: 'HEALTH', label: '❤️ Health & Blood Donation Drives' },
-                { id: 'FOOD_DRIVE', label: '🍏 Food Collection Drives' },
-                { id: 'OTHER', label: '✨ Other Volunteer Drives' }
+                { id: 'CLEANUP', label: 'Clean-up Drives' },
+                { id: 'ANIMAL_WELFARE', label: 'Animal Welfare Drives' },
+                { id: 'HEALTH', label: 'Health & Blood Donation Drives' },
+                { id: 'FOOD_DRIVE', label: 'Food Collection Drives' },
+                { id: 'OTHER', label: 'Other Volunteer Drives' }
               ]
                 .filter(group => {
                   if (filter === 'all') return true;
@@ -315,9 +315,8 @@ export default function JoinCampaign() {
 
                   return (
                     <div key={group.id} className="reveal mb-6">
-                      <h3 className={`font-['Poppins'] font-bold text-xl mb-6 flex items-center gap-2 pb-2 border-b ${
-                        isDark ? 'text-white border-white/5' : 'text-[#1E1B4B] border-[#E0E7FF]'
-                      }`}>
+                      <h3 className={`font-['Poppins'] font-bold text-xl mb-6 flex items-center gap-2 pb-2 border-b ${isDark ? 'text-white border-white/5' : 'text-[#1E1B4B] border-[#E0E7FF]'
+                        }`}>
                         <span>{group.label}</span>
                         <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#13221B]/10 text-[#2E7D59]">
                           {groupCampaigns.length} active
@@ -378,16 +377,16 @@ export default function JoinCampaign() {
                                   onClick={() => handleJoin(c.id)}
                                   className="w-full py-3 rounded-xl bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white text-xs font-bold hover:shadow-lg transition-all"
                                 >
-                                  🤝 Join Campaign
+                                  Join Campaign
                                 </button>
                               ) : statusText === 'PENDING' ? (
                                 <div className="w-full py-2.5 rounded-xl border border-[#FFB347]/30 bg-[#FFB347]/10 text-[#FFB347] text-xs font-semibold text-center flex items-center justify-center gap-1.5">
-                                  <Clock size={13} className="animate-pulse" /> Pending Approval 🕒
+                                  <Clock size={13} className="animate-pulse" /> Pending Approval
                                 </div>
                               ) : statusText === 'APPROVED' ? (
                                 <div className="w-full p-3 rounded-xl border border-[#43E97B]/30 bg-[#43E97B]/10 text-center">
                                   <p className="text-[#43E97B] text-xs font-bold flex items-center justify-center gap-1.5 mb-1">
-                                    <CheckCircle size={13} /> Approved Volunteer 🎉
+                                    <CheckCircle size={13} /> Approved Volunteer
                                   </p>
                                   {approvalCode && (
                                     <p className="text-xs font-mono font-bold" style={{ color: isDark ? '#FFF' : '#13221B' }}>

@@ -56,12 +56,17 @@ export const requireAuth = async (req, res, next) => {
     writeDebugLog(`Decoded ID: ${decoded.id}, Role: ${role}`);
 
     let userOrNgo = null;
-    if (role === "user") {
-      userOrNgo = await prisma.user.findUnique({ where: { id: decoded.id } });
-    } else if (role === "ngo") {
-      userOrNgo = await prisma.ngo.findUnique({ where: { id: decoded.id } });
-    } else if (role === "admin") {
-      userOrNgo = await prisma.admin.findUnique({ where: { id: decoded.id } });
+    try {
+      if (role === "user") {
+        userOrNgo = await prisma.user.findUnique({ where: { id: decoded.id } });
+      } else if (role === "ngo") {
+        userOrNgo = await prisma.ngo.findUnique({ where: { id: decoded.id } });
+      } else if (role === "admin") {
+        userOrNgo = await prisma.admin.findUnique({ where: { id: decoded.id } });
+      }
+    } catch (dbError) {
+      writeDebugLog(`Database error in requireAuth: ${dbError.message}`);
+      return res.status(500).json({ message: "Internal Server Error: Database query failed", error: dbError.message });
     }
 
     if (!userOrNgo) {
@@ -81,6 +86,6 @@ export const requireAuth = async (req, res, next) => {
     next();
   } catch (error) {
     writeDebugLog(`Exception caught in requireAuth middleware: ${error.stack}`);
-    return res.status(401).json({ message: "Unauthorized: Invalid token", error: error.message });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };

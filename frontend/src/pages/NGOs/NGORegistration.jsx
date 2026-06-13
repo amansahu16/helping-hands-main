@@ -215,8 +215,8 @@ export default function NGORegistration() {
       return;
     }
 
-    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8}$/.test(form.password)) {
-      setError('Password must be exactly 8 characters long and contain both letters and numbers.');
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(form.password)) {
+      setError('Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_.');
       return;
     }
 
@@ -349,7 +349,7 @@ export default function NGORegistration() {
 
                     <div className="flex flex-col gap-1.5">
                       <label className={labelClass}>Password *</label>
-                      <input name="password" type="password" value={form.password} onChange={change} required placeholder="Create a strong password" className={inputClass} />
+                      <input name="password" type="password" value={form.password} onChange={change} required minLength={8} maxLength={16} placeholder="Create a strong password" className={inputClass} />
                     </div>
 
                     <div className="grid sm:grid-cols-2 gap-4">

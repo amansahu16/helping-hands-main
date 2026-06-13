@@ -125,7 +125,7 @@ export default function DonateToNGO() {
       donateHeroSub: 'Your support helps verified NGOs run feeding drives, medical treatment, shelter maintenance, and animal rescue services.',
       moneyFund: 'Monetary Fund',
       donateGoods: 'Donate Goods',
-      donationRegistered: 'Donation Registered! 🎉',
+      donationRegistered: 'Donation Registered!',
       paymentSuccessMsg: 'We have successfully processed your payment of',
       paymentTo: 'to',
       receiptNo: 'Receipt No',
@@ -415,11 +415,11 @@ export default function DonateToNGO() {
   const handleDonateInit = (e) => {
     e.preventDefault()
     if (!user) {
-      setError(t.common.submit === 'सबमिट करें' ? 'कृपया एनजीओ को दान करने के लिए लॉगिन करें।' : 'Please login to donate to an NGO.')
+      setError(t.common.submit === 'Please login to donate to an NGO.')
       return
     }
     if (!form.ngoId) {
-      setError(t.common.submit === 'सबमिट करें' ? 'कृपया एक एनजीओ चुनें।' : 'Please select an NGO.')
+      setError(t.common.submit === 'Please select an NGO.')
       return
     }
 
@@ -528,7 +528,7 @@ export default function DonateToNGO() {
                   <div className="w-16 h-16 rounded-full bg-[#43E97B]/10 border border-[#43E97B]/40 flex items-center justify-center mb-6">
                     <CheckCircle size={40} className="text-[#43E97B]" />
                   </div>
-                  <h3 className={`font-['Poppins'] font-bold text-3xl mb-3 ${heroText}`}>{nt.donationRegistered || 'Donation Registered! 🎉'}</h3>
+                  <h3 className={`font-['Poppins'] font-bold text-3xl mb-3 ${heroText}`}>{nt.donationRegistered || 'Donation Registered!'}</h3>
 
                   {successPayload?.type === 'MONEY' ? (
                     <div className="w-full max-w-lg flex flex-col items-center">
@@ -594,7 +594,7 @@ export default function DonateToNGO() {
                           onClick={handleDownloadReceipt}
                           className="px-5 py-2.5 rounded-xl border text-xs font-bold transition-all bg-[#13221B]/10 border-[#13221B]/25 text-[#2E7D59] hover:bg-[#13221B]/20 cursor-pointer flex items-center gap-1.5"
                         >
-                          📥 Download Receipt
+                          Download Receipt
                         </button>
                       </div>
                     </div>
@@ -833,7 +833,7 @@ export default function DonateToNGO() {
                                 : 'border-[#13221B]/25 text-[#5A5A8A]'
                               }`}
                           >
-                            <span>{nt.dropNgoCenter || '🏢 Drop at NGO Center'}</span>
+                            <span>{nt.dropNgoCenter || 'Drop at NGO Center'}</span>
                           </button>
                           <button
                             type="button"
@@ -845,7 +845,7 @@ export default function DonateToNGO() {
                                 : 'border-[#13221B]/25 text-[#5A5A8A]'
                               }`}
                           >
-                            <span>{nt.requestPickup || '🚗 Request Volunteer Pickup'}</span>
+                            <span>{nt.requestPickup || 'Request Volunteer Pickup'}</span>
                           </button>
                         </div>
                       </div>
@@ -855,10 +855,10 @@ export default function DonateToNGO() {
                         <div className={`p-4 rounded-2xl border flex flex-col gap-3 ${isDark ? 'bg-[#0F0F2A]/60 border-white/5' : 'bg-[#F9FAFF] border-[#13221B]/20 shadow-sm'
                           }`}>
                           <div>
-                            <p className={`text-xs font-bold ${heroText}`}>{nt.ngoDropAddress || '📍 NGO Center Drop Address'}</p>
+                            <p className={`text-xs font-bold ${heroText}`}>{nt.ngoDropAddress || 'NGO Center Drop Address'}</p>
                             <p className={`text-xs mt-0.5 ${mutedText}`}>{selectedNgo.location || 'Address registered with center.'}</p>
                             {selectedNgo.phoneNumber && (
-                              <p className={`text-[11px] mt-1 ${mutedText}`}>{nt.contactLabel || '📞 Contact'}: {selectedNgo.phoneNumber}</p>
+                              <p className={`text-[11px] mt-1 ${mutedText}`}>{nt.contactLabel || 'Contact'}: {selectedNgo.phoneNumber}</p>
                             )}
                           </div>
                           {selectedNgo.latitude && selectedNgo.longitude && (
@@ -991,7 +991,7 @@ export default function DonateToNGO() {
                   <div>
                     <p className={`text-xs font-bold mb-1 ${heroText}`}>{nt.policyFaq1Q || 'Is the payment gateway secure?'}</p>
                     <p className={`text-xs leading-relaxed ${mutedText}`}>
-                      {nt.policyFaq1A || 'Absolutely. Payment gateways utilize full 256-bit SSL encryption. We simulate payment processes in sandbox/test modes for testing.'}
+                      {nt.policyFaq1A || 'Absolutely. Payment gateways is dirctly open through NGOs UPI ID. We simulate payment processes successfully.'}
                     </p>
                   </div>
                   <div>
