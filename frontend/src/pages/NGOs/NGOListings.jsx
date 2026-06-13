@@ -212,7 +212,7 @@ export default function NGOListings() {
             </div>
           ) : displayed.length === 0 ? (
             <div className="text-center py-20">
-              <div className="text-6xl mb-4">🏢</div>
+              <div className="text-6xl mb-4"></div>
               <h3 className={`font-bold text-xl mb-2 ${heroText}`}>No NGOs found</h3>
               <p className={`text-sm mb-4 ${mutedText}`}>
                 {ngos.length === 0 ? 'No NGOs are registered yet. Be the first!' : 'Try adjusting your search or filter.'}

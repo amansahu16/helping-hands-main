@@ -22,7 +22,6 @@ router.put("/me/profile",       ngoController.updateMyProfile);
 router.put("/me/password",      ngoController.changePassword);
 router.get("/me/donations",     ngoController.getMyDonations);
 router.get("/me/rescue-requests", ngoController.getNearbyRescueRequests);
-router.get("/me/contributors",  ngoController.getMyContributors);
  
 // NGO posts (CRUD)
 router.post("/me/posts",        ngoController.createPost);

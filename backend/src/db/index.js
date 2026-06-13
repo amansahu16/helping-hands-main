@@ -6,20 +6,20 @@ const connectDB = async () => {
         console.log("\n PostgreSQL connected !!");
 
         // Seed/Upsert the default Admin
-        const email = "amantest045@gmail.com";
-        const passwordHash = "$2b$12$EONxQJD056rGi6Pzs1c5Xea7u8Rm.J6hwTLha20XftSynY8anoGQu"; // hash for aman1619
+        const email = "amansahuat799959@gmail.com";
+        const passwordHash = "$2b$12$BUlhO1hZh057Aw0MJgkDeO2r6GOPMovZz90.5LSJ82acAagDWM98i"; // hash for @Man1619
         
         await prisma.admin.upsert({
             where: { email },
             update: {
                 name: "Aman Sahu",
-                phoneNumber: "9999999999",
+                phoneNumber: "6267718876",
                 passwordHash
             },
             create: {
                 name: "Aman Sahu",
                 email,
-                phoneNumber: "9999999999",
+                phoneNumber: "6267718876",
                 passwordHash
             }
         });

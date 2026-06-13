@@ -17,7 +17,6 @@ async function listDonations(req, res) {
         donor:        { select: { id: true, name: true } },
         donorNgo:     { select: { id: true, name: true, photoUrl: true } },
         recipientNgo: { select: { id: true, name: true, photoUrl: true } },
-        _count:       { select: { items: true } },
       },
       skip: (page - 1) * limit,
       take: Number(limit),
@@ -36,7 +35,6 @@ async function getDonationById(req, res) {
       include: {
         donor:        { select: { id: true, name: true, phoneNumber: true } },
         recipientNgo: { select: { id: true, name: true, phoneNumber: true } },
-        items:        true,
       },
     });
     if (!donation) return res.status(404).json({ message: "Donation not found" });
@@ -81,11 +79,7 @@ async function createDonation(req, res) {
         transactionId: transactionId || null,
         otp:        otp || null,
         reachedDonor: reachedDonor || false,
-        items: items?.length
-          ? { create: items.map(i => ({ itemType: i.itemType, description: i.description, quantity: i.quantity })) }
-          : undefined,
       },
-      include: { items: true },
     });
     return res.status(201).json(donation);
   } catch (err) {
@@ -134,41 +128,7 @@ async function deleteDonation(req, res) {
   }
 }
  
-// ── Donation Items ────────────────────────────────────────────
- 
-async function addItem(req, res) {
-  try {
-    const { itemType, description, quantity } = req.body;
-    const item = await prisma.donationItem.create({
-      data: { donationId: req.params.id, itemType, description, quantity },
-    });
-    return res.status(201).json(item);
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-}
- 
-async function updateItem(req, res) {
-  try {
-    const { itemType, description, quantity } = req.body;
-    const item = await prisma.donationItem.update({
-      where: { id: req.params.itemId },
-      data: { itemType, description, quantity },
-    });
-    return res.json(item);
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-}
- 
-async function deleteItem(req, res) {
-  try {
-    await prisma.donationItem.delete({ where: { id: req.params.itemId } });
-    return res.json({ message: "Item removed" });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-}
+
  
 // ── Status (NGO) ──────────────────────────────────────────────
  
@@ -237,5 +197,5 @@ async function verifyOtp(req, res) {
  
 export const donationController = {
   listDonations, getDonationById, createDonation, updateDonation, deleteDonation,
-  addItem, updateItem, deleteItem, updateStatus, markReached, verifyOtp,
+  updateStatus, markReached, verifyOtp,
 };

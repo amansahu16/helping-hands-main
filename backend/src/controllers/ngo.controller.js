@@ -17,7 +17,6 @@ async function listNgos(req, res) {
         photoUrl: true, verified: true, areaOfWork: true, description: true,
         registrationNumber: true, createdAt: true,
         latitude: true, longitude: true, upiId: true,
-        _count: { select: { contributors: true } }
       },
       skip: (page - 1) * limit,
       take: Number(limit),
@@ -189,17 +188,7 @@ async function getNearbyRescueRequests(req, res) {
   }
 }
  
-async function getMyContributors(req, res) {
-  try {
-    const contributors = await prisma.contributor.findMany({
-      where: { ngoId: req.user.id },
-      include: { user: { select: { id: true, name: true, email: true, photoUrl: true } } },
-    });
-    return res.json(contributors);
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-}
+
  
 async function createPost(req, res) {
   try {
@@ -293,7 +282,7 @@ async function listNgoReviews(req, res) {
 export const ngoController = {
   listNgos, getNgoById, getNgoPosts,
   getMyProfile, updateMyProfile, changePassword,
-  getMyDonations, getNearbyRescueRequests, getMyContributors,
+  getMyDonations, getNearbyRescueRequests,
   createPost, updatePost, deletePost,
   createNgoReview, listNgoReviews,
 };

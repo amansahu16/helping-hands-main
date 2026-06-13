@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import useScrollReveal from '../../hooks/useScrollReveal'
 import LocationAutocomplete from '../../components/LocationAutocomplete'
-import bgImg from '../images/admin.jpg'
+import bgImg from '../images/admin.png'
 
 export default function AdminDashboard() {
   useScrollReveal()
@@ -261,7 +261,7 @@ export default function AdminDashboard() {
   return (
     <div className="page-enter">
       {/* Hero Header */}
-      <section 
+      <section
         className="page-hero-bg pt-32 pb-16 text-center relative overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(var(--hero-overlay-start), var(--hero-overlay-end)), url(${bgImg})`,

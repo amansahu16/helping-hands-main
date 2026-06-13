@@ -142,23 +142,11 @@ model Donation {
   amount         Float?
   reachedDonor   Boolean        @default(false) @map("reached_donor")
   transactionId  String?        @map("transaction_id")
-  items          DonationItem[]
   donor          User?          @relation(fields: [donorId], references: [id])
   donorNgo       Ngo?           @relation("NgoMadeDonations", fields: [donorNgoId], references: [id])
   recipientNgo   Ngo?           @relation("NgoReceivedDonations", fields: [recipientNgoId], references: [id])
 
   @@map("donations")
-}
-
-model DonationItem {
-  id          String   @id @default(uuid())
-  donationId  String   @map("donation_id")
-  itemType    String?  @map("item_type")
-  description String?
-  quantity    Int?
-  donation    Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
-
-  @@map("donation_items")
 }
 
 
@@ -222,13 +210,7 @@ enum LocationType {
   GENERAL
 }
 
-enum ContributionType {
-  VOLUNTEER
-  SPONSOR
-  VET
-  FOSTER
-  OTHER
-}
+
 
 model Location {
   id        String        @id @default(uuid())
@@ -314,20 +296,6 @@ model NgoPost {
   @@map("ngo_posts")
 }
 
-model Contributor {
-  id               String            @id @default(uuid())
-  userId           String            @map("user_id")
-  ngoId            String            @map("ngo_id")
-  contributionType ContributionType? @map("contribution_type")
-  location         String?
-  createdAt        DateTime          @default(now()) @map("created_at")
-  ngo              Ngo               @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, ngoId])
-  @@map("contributors")
-}
-
 model NgoReview {
   id        String   @id @default(uuid())
   ngoId     String   @map("ngo_id")
@@ -360,7 +328,6 @@ model User {
   campaignsJoined    CampaignParticipant[]
   campaignsOrganized Campaign[]            @relation("UserOrganizedCampaigns")
   complaints         Complaint[]
-  contributions      Contributor[]
   donations          Donation[]
   ngoReviews         NgoReview[]
   rescueRequests     RescueRequest[]
@@ -393,7 +360,6 @@ model Ngo {
   adoptions            Adoption[]
   animalsPosted        Animal[]        @relation("NgoPostedAnimals")
   campaignsOrganized   Campaign[]      @relation("NgoOrganizedCampaigns")
-  contributors         Contributor[]
   donationsMade        Donation[]      @relation("NgoMadeDonations")
   donationsReceived    Donation[]      @relation("NgoReceivedDonations")
   posts                NgoPost[]
