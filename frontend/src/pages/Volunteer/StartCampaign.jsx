@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import useScrollReveal from '../../hooks/useScrollReveal'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
@@ -55,12 +55,24 @@ export default function StartCampaign() {
     { icon: <Map size={20} className="text-[#3D6A53]" />, title: 'Real-Time Location', desc: 'Add your campaign location for easy discovery by nearby volunteers.' },
     { icon: <Users size={20} className="text-[#3D6A53]" />, title: 'Volunteer Management', desc: 'Track registrations, communicate with participants, and manage attendance.' },
   ]
+  const [pastCampaigns, setPastCampaigns] = useState([])
+  const [loadingPast, setLoadingPast] = useState(true)
 
-  const pastCampaigns = [
-    { title: 'Marine Beach Cleanup', organizer: 'Save Our Shores', volunteers: 80, impact: '2 tonnes waste collected' },
-    { title: 'Adopt a Street Dog Week', organizer: 'Paws & Claws NGO', volunteers: 45, impact: '32 dogs adopted' },
-    { title: 'Textbook Distribution Drive', organizer: 'Study India', volunteers: 30, impact: '500 kids received books' },
-  ]
+  useEffect(() => {
+    let active = true
+    const fetchPast = async () => {
+      try {
+        const { data } = await api.get('/campaigns', { params: { status: 'COMPLETED', limit: 5 } })
+        if (active) setPastCampaigns(data)
+      } catch (err) {
+        console.error('Failed to fetch completed campaigns:', err)
+      } finally {
+        if (active) setLoadingPast(false)
+      }
+    }
+    fetchPast()
+    return () => { active = false }
+  }, [])
 
   // Theme-aware styles
   const heroText = isDark ? 'text-white' : 'text-[#1E1B4B]'
@@ -183,14 +195,29 @@ export default function StartCampaign() {
               ))}
 
               <div className={`border rounded-2xl p-5 ${cardBg}`}>
-                <h4 className={`font-['Poppins'] font-semibold text-sm mb-3 ${heroText}`}>Inspired by These </h4>
-                {pastCampaigns.map((c, i) => (
-                  <div key={i} className="mb-3 pb-3 border-b border-white/5 last:border-0">
-                    <p className={`font-semibold text-xs ${heroText}`}>{c.title}</p>
-                    <p className={`text-xs ${mutedText}`}>{c.organizer} · {c.volunteers} volunteers</p>
-                    <p className="text-[#43E97B] text-xs mt-0.5">{c.impact}</p>
+                <h4 className={`font-['Poppins'] font-semibold text-sm mb-3 ${heroText}`}>Inspired by These</h4>
+                {loadingPast ? (
+                  <div className="flex items-center gap-2 py-4 justify-center">
+                    <span className="w-4 h-4 border-2 border-[#43E97B]/30 border-t-[#43E97B] rounded-full animate-spin" />
+                    <p className={`text-xs ${mutedText}`}>Loading past campaigns...</p>
                   </div>
-                ))}
+                ) : pastCampaigns.length === 0 ? (
+                  <p className={`text-xs ${mutedText} italic py-2`}>
+                    No completed campaigns found yet. Be the first to launch one!
+                  </p>
+                ) : (
+                  pastCampaigns.map((c, i) => (
+                    <div key={c.id || i} className="mb-3 pb-3 border-b border-white/5 last:border-0">
+                      <p className={`font-semibold text-xs ${heroText}`}>{c.name}</p>
+                      <p className={`text-xs ${mutedText}`}>
+                        {c.organizerUser?.name || c.organizerNgo?.name || 'Community'} · {c.currentParticipants} volunteers
+                      </p>
+                      {c.description && (
+                        <p className="text-[#43E97B] text-xs mt-0.5 line-clamp-2">{c.description}</p>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

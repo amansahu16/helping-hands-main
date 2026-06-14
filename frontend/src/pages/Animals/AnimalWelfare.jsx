@@ -10,30 +10,7 @@ import imgRescue from '../images/animal_rescue.png'
 import imgAdopt from '../images/animal_adopt.png'
 import FeatureCard from '../../components/FeatureCard'
 
-function FAQAccordion({ items, isDark }) {
-  const [open, setOpen] = useState(null)
-  const faqBorder = (active) => active
-    ? 'border-[#13221B]/50'
-    : isDark ? 'border-white/8' : 'border-[#E0E7FF]'
-  const textMuted = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
-  const textPrimary = isDark ? 'text-white' : 'text-[#1E1B4B]'
 
-  return (
-    <div className="flex flex-col gap-3">
-      {items.map((item, i) => (
-        <div key={i} className={`border rounded-2xl overflow-hidden transition-all ${faqBorder(open===i)}`}>
-          <button onClick={()=>setOpen(open===i?null:i)} className={`w-full flex justify-between items-center px-5 py-4 text-left text-sm font-medium ${textPrimary}`}>
-            {item.q}
-            <span className={`text-[#13221B] text-xl ml-4 ${open===i?'rotate-45':''} transition-transform`}>+</span>
-          </button>
-          <div className={`accordion-body ${open===i?'open':''}`}>
-            <p className={`px-5 pb-4 text-sm leading-relaxed ${textMuted}`}>{item.a}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export default function AnimalWelfare() {
   useScrollReveal()
@@ -83,12 +60,7 @@ export default function AnimalWelfare() {
     { name:'Rohan NGO', role:'Animal NGO Manager', text:'We get rescue requests directly from community members. Our response time has improved by 80% since joining Helping Hands.', initial:'R' },
   ]
 
-  const faqs = [
-    { q:'What animals can be reported?', a:'Any stray, injured, or sick animal — dogs, cats, birds, or other community animals.' },
-    { q:'How do I adopt through the platform?', a:'Browse adoptable animals, connect with the shelter or rescuer, and complete a simple adoption form.' },
-    { q:'Can I donate money for animal welfare?', a:'Yes. You can donate to specific NGOs or the general animal welfare fund.' },
-    { q:'What if I cannot help directly?', a:"You can spread awareness, share listings, or donate funds — every bit helps." },
-  ]
+
 
   const statusColor = { AVAILABLE:'text-[#43E97B] bg-[#43E97B]/10', UNDER_TREATMENT:'text-[#FFB347] bg-[#FFB347]/10', RESCUED:'text-[#13221B] bg-[#13221B]/10' }
 
@@ -197,13 +169,7 @@ export default function AnimalWelfare() {
 
 
 
-      {/* FAQ */}
-      <section className={`py-16 ${sectionBgB}`}>
-        <div className="max-w-[700px] mx-auto px-4 sm:px-6">
-          <h2 className={`font-['Poppins'] font-bold text-3xl text-center mb-8 ${heroText}`}>Animal Welfare FAQ</h2>
-          <div className="reveal"><FAQAccordion items={faqs} isDark={isDark} /></div>
-        </div>
-      </section>
+
     </div>
   )
 }

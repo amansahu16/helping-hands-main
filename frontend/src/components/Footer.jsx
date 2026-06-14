@@ -7,7 +7,6 @@ import Logo from './Logo'
 
 const footerLinks = {
   platform: [
-    { label: 'How It Works', path: '/how-it-works' },
     { label: 'Donate Items', path: '/donate' },
     { label: 'Animal Welfare', path: '/animals' },
     { label: 'NGOs', path: '/ngos' },

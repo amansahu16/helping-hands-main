@@ -2,8 +2,8 @@
 // ============================================================
 import express from "express";
 import { donationController } from "../controllers/donation.controller.js";
-import { requireAuth } from "../middleware/requireAuth.js";
-import { requireRole } from "../middleware/requireRole.js";
+import { requireAuth } from "../middlewares/requireAuth.js";
+import { requireRole } from "../middlewares/requireRole.js";
  
 const router = express.Router();
  

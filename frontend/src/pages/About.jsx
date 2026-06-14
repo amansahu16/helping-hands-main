@@ -99,9 +99,6 @@ export default function About() {
               <p className={`leading-relaxed mb-6 ${mutedText}`}>
                 Every day, thousands of kg of food go to waste, while people go hungry. Clothes sit unused while someone shivers. Animals suffer while potential rescuers don't know how to help. We're changing that — one connection at a time.
               </p>
-              <Link to="/how-it-works" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white text-sm font-bold hover:-translate-y-1 transition-all">
-                See How It Works <ArrowRight size={16} />
-              </Link>
             </div>
 
             <div className="grid grid-cols-2 gap-4 reveal-right">

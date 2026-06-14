@@ -17,7 +17,7 @@ function ScrollToTop() {
 // Pages
 import Home from './pages/Home'
 import About from './pages/About'
-import HowItWorks from './pages/HowItWorks'
+
 import Contact from './pages/Contact'
 import FAQ from './pages/FAQ'
 
@@ -94,7 +94,7 @@ export default function App() {
               {/* Core pages */}
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
+
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
 

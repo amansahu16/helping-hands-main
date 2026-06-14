@@ -237,12 +237,7 @@ export default function Home() {
     },
   ]
 
-  const howItWorks = [
-    { num: '01', title: 'Create Your Account', desc: 'Sign up as a donor, volunteer, or NGO in minutes. Verified & secure.' },
-    { num: '02', title: 'Browse or Post', desc: 'List items to donate, post animals in need, or create/join a campaign.' },
-    { num: '03', title: 'Connect Locally', desc: 'Real-time location matching connects you with nearby recipients.' },
-    { num: '04', title: 'Make an Impact', desc: 'Track your donations, rescues, and volunteer hours. See your community grow.' },
-  ]
+
 
   const benefits = [
     { icon: <Shield size={20} />, title: 'Verified NGOs', desc: 'Every NGO is manually verified before being listed on the platform.' },
@@ -338,7 +333,7 @@ export default function Home() {
                 <Link to="/donate" className="flex items-center gap-2 px-6 py-3 rounded-full font-['Poppins'] font-semibold text-sm bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white shadow-[0_0_28px_rgba(108,99,255,0.4)] hover:shadow-[0_0_42px_rgba(108,99,255,0.6)] hover:-translate-y-1 transition-all">
                   <Heart size={17} className="fill-white" /> Start Donating
                 </Link>
-                <Link to="/how-it-works" className={`flex items-center gap-2 px-6 py-3 rounded-full font-['Poppins'] font-semibold text-sm hover:-translate-y-1 transition-all ${isDark
+                <Link to="/about" className={`flex items-center gap-2 px-6 py-3 rounded-full font-['Poppins'] font-semibold text-sm hover:-translate-y-1 transition-all ${isDark
                   ? 'bg-white/[0.06] border border-white/15 text-white hover:bg-white/10 backdrop-blur-sm'
                   : 'bg-white border border-[#C7D2FE] text-[#4338CA] hover:bg-[#EEF2FF] shadow-sm'
                   }`}>
@@ -454,44 +449,7 @@ export default function Home() {
       </section>
 
 
-      {/* ══ HOW IT WORKS ═══════════════════════════════════════════ */}
-      <section className={`py-24 relative ${sectionA}`}>
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-          <div className="text-center mb-14 reveal">
-            <div className="section-label mb-4">Simple Process</div>
-            <h2 className={`font-['Poppins'] font-black text-4xl sm:text-5xl mb-4 ${heroText}`}>
-              How It <span className="gradient-text">Works</span>
-            </h2>
-            <p className={`text-lg max-w-lg mx-auto ${mutedText}`}>Start making a difference in 4 easy steps — no complicated process, just pure community spirit.</p>
-          </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {howItWorks.map((step, i) => (
-              <div key={i} className="relative reveal" style={{ transitionDelay: `${i * 0.1}s` }}>
-                {i < howItWorks.length - 1 && (
-                  <div className={`hidden lg:block absolute top-12 left-full w-full h-0.5 border-t-2 border-dashed z-0 -translate-x-1/2 ${isDark ? 'border-[#2E7D59]/20' : 'border-[#C7D2FE]'}`} />
-                )}
-                <div className={`relative z-10 border rounded-2xl p-6 h-full hover:-translate-y-1.5 transition-all duration-300 ${isDark
-                  ? 'bg-[#16201B] border-[#2E7D59]/15 hover:border-[#43E97B]/30 hover:shadow-[0_8px_30px_rgba(67,233,123,0.06)]'
-                  : 'bg-white border-[#2E7D59]/12 hover:border-[#13221B]/30 hover:shadow-[0_8px_30px_rgba(19,34,27,0.06)]'
-                  }`}>
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#13221B] to-[#3D6A53] flex items-center justify-center font-bold text-white text-base mb-5 shadow-[0_4px_12px_rgba(19,34,27,0.15)]">
-                    {step.num}
-                  </div>
-                  <h4 className={`font-['Poppins'] font-bold text-base mb-2 ${heroText}`}>{step.title}</h4>
-                  <p className={`text-xs leading-relaxed ${mutedText}`}>{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-10 reveal">
-            <Link to="/how-it-works" className={`inline-flex items-center gap-2 px-6 py-3 rounded-full border text-sm font-semibold hover:-translate-y-0.5 transition-all ${isDark ? 'border-[#13221B]/40 text-[#2E7D59] hover:bg-[#13221B]/10' : 'border-[#13221B]/30 text-[#13221B] hover:bg-[#EEF2FF]'}`}>
-              See Full Guide <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* ══ BENEFITS ═══════════════════════════════════════════════ */}
       <section className={`py-24 relative ${sectionB}`}>

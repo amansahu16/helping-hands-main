@@ -10,29 +10,7 @@ import imgDonate from '../images/ngo_donate.png'
 import imgBrowse from '../images/ngo_browse.png'
 import FeatureCard from '../../components/FeatureCard'
 
-function FAQAccordion({ items, isDark }) {
-  const [open, setOpen] = useState(null)
-  const faqBorder = (active) => active
-    ? 'border-[#13221B]/50'
-    : isDark ? 'border-white/8' : 'border-[#E0E7FF]'
-  const textMuted = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
-  const textPrimary = isDark ? 'text-white' : 'text-[#1E1B4B]'
 
-  return (
-    <div className="flex flex-col gap-3">
-      {items.map((item, i) => (
-        <div key={i} className={`border rounded-2xl overflow-hidden transition-all ${faqBorder(open === i)}`}>
-          <button onClick={() => setOpen(open === i ? null : i)} className={`w-full flex justify-between items-center px-5 py-4 text-left text-sm font-medium ${textPrimary}`}>
-            {item.q} <span className={`text-[#13221B] text-xl ml-4 ${open === i ? 'rotate-45' : ''} transition-transform`}>+</span>
-          </button>
-          <div className={`accordion-body ${open === i ? 'open' : ''}`}>
-            <p className={`px-5 pb-4 text-sm leading-relaxed ${textMuted}`}>{item.a}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export default function NGOs() {
   useScrollReveal()
@@ -61,11 +39,7 @@ export default function NGOs() {
     { img: imgBrowse, title: 'Browse Verified NGOs', desc: 'Discover trusted organizations working for your community.', link: '/ngos/listings' },
   ]
 
-  const faqs = [
-    { q: 'How do NGOs get verified?', a: 'Submitted documents are manually reviewed. Verification typically takes 3–5 business days.' },
-    { q: 'Can I trust listed NGOs?', a: 'All NGOs display their verification status. Only verified NGOs can receive donations.' },
-    { q: 'Is there a fee for NGOs to register?', a: 'Basic registration is free. Premium features for enhanced visibility may be available.' },
-  ]
+
 
   const filtered = ngos.filter(n => !search || n.name?.toLowerCase().includes(search.toLowerCase()) || n.location?.toLowerCase().includes(search.toLowerCase()))
 
@@ -118,13 +92,7 @@ export default function NGOs() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className={`py-14 ${sectionBgB}`}>
-        <div className="max-w-[700px] mx-auto px-4 sm:px-6">
-          <h2 className={`font-['Poppins'] font-bold text-2xl text-center mb-6 ${heroText}`}>NGO FAQ</h2>
-          <div className="reveal"><FAQAccordion items={faqs} isDark={isDark} /></div>
-        </div>
-      </section>
+
     </div>
   )
 }

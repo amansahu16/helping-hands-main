@@ -4,30 +4,7 @@ import api from '../api/axios'
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 
-function FAQAccordion({ items, isDark }) {
-  const [open, setOpen] = useState(null)
-  const borderBase = isDark ? 'border-white/8' : 'border-[#E0E7FF]'
-  const borderOpen = isDark ? 'border-[#13221B]/50' : 'border-[#13221B]/40'
-  const btnText = isDark ? 'text-white' : 'text-[#1E1B4B]'
-  const answerText = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
-  return (
-    <div className="flex flex-col gap-3">
-      {items.map((item, i) => (
-        <div key={i} className={`border rounded-2xl overflow-hidden transition-all duration-300 ${open === i ? borderOpen : borderBase}`}>
-          <button
-            onClick={() => setOpen(open === i ? null : i)}
-            className={`w-full flex justify-between items-center px-5 py-4 text-left text-sm font-semibold ${btnText} ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-[#EEF2FF]'}`}
-          >
-            {item.q} <span className={`text-[#13221B] text-xl ml-4 ${open === i ? 'rotate-45' : ''} transition-transform`}>+</span>
-          </button>
-          <div className={`accordion-body ${open === i ? 'open' : ''}`}>
-            <p className={`px-5 pb-4 text-sm leading-relaxed ${answerText}`}>{item.a}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
+
 
 export default function Contact() {
   useScrollReveal()
@@ -70,11 +47,7 @@ export default function Contact() {
     { icon: <MapPin size={22} />, title: 'Our Network', value: 'Bharat', href: '#', color: 'text-[#3D6A53]', bg: isDark ? 'bg-white/5 border-white/8' : 'bg-pink-50 border-pink-100' },
   ]
 
-  const faqs = [
-    { q: 'How quickly will I get a response?', a: 'We typically respond within 24 hours on business days. For urgent animal rescue, call the emergency line.' },
-    { q: 'Can NGOs contact you for partnerships?', a: 'Absolutely! Email us at partnerships@helpinghands.org with your NGO details.' },
-    { q: 'I have a complaint. What should I do?', a: 'Use the contact form with subject "Complaint" and our team will prioritize your case.' },
-  ]
+
 
 
 
@@ -213,13 +186,7 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className={`py-14 ${sectionA}`}>
-        <div className="max-w-[700px] mx-auto px-4 sm:px-6">
-          <h2 className={`font-['Poppins'] font-bold text-2xl text-center mb-6 ${heroText}`}>Contact FAQ</h2>
-          <div className="reveal"><FAQAccordion items={faqs} isDark={isDark} /></div>
-        </div>
-      </section>
+
     </div>
   )
 }

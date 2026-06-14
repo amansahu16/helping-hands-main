@@ -4,7 +4,7 @@ This guide walks you through the steps to configure, migrate, run, and test the 
 
 ---
 
-## 🛠️ Summary of Fixes Implemented
+##  Summary of Fixes Implemented
 We reviewed and resolved all critical runtime and architecture errors in the backend codebase:
 1. **Prisma Client Exports**: Created `src/lib/prisma.js` to properly initialize and export the named `prisma` instance, resolving import failures in five controllers.
 2. **Authentication Middleware**: Created `src/middleware/requireAuth.js` and `requireRole.js` to enforce JWT auth and role-based permissions (User/NGO).
@@ -17,7 +17,7 @@ We reviewed and resolved all critical runtime and architecture errors in the bac
 
 ---
 
-## 🚀 Setup Steps
+##  Setup Steps
 
 ### 1. Install Dependencies
 Open a terminal in the root of the project directory and run:
@@ -60,7 +60,7 @@ You should see:
 
 ---
 
-## 🧪 Verification & Testing Steps
+##  Verification & Testing Steps
 
 Open your browser and navigate to: **`http://localhost:8000`**
 

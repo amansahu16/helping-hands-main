@@ -15,7 +15,7 @@ export default function FeedAnimals() {
   const isDark = theme === 'dark'
   const [email, setEmail] = useState('')
   const [subbed, setSubbed] = useState(false)
-  const [faqOpen, setFaqOpen] = useState(null)
+
 
   // ── Animal Welfare Campaigns ───────────────────────────────
   const [campaigns, setCampaigns] = useState([])
@@ -58,11 +58,7 @@ export default function FeedAnimals() {
     { name: 'Suresh P.', role: 'Feeder, Pune', text: 'I sponsored a feeding station near my office. It\'s a small cost but makes a massive daily impact.', initial: 'S' },
   ]
 
-  const faqs = [
-    { q: 'What food should I give?', a: 'Dogs: rice with boiled chicken or eggs. Cats: commercial cat food or fish. Birds: millet, rice grains. Avoid onion, garlic, chocolate for all.' },
-    { q: 'Is it safe to approach street animals?', a: 'Approach slowly, avoid direct eye contact, let the animal smell you first. Never force interaction.' },
-    { q: 'Can I organize a feeding drive?', a: 'Yes! Use our Volunteer section to create a campaign and select "Animal Welfare" as the type.' },
-  ]
+
 
   const heroText = isDark ? 'text-white' : 'text-[#1E1B4B]'
   const subText = isDark ? 'text-[#BBBBD8]' : 'text-[#4338CA]'
@@ -274,24 +270,7 @@ export default function FeedAnimals() {
 
 
 
-      {/* FAQ */}
-      <section className={`py-14 ${sectionBgB}`}>
-        <div className="max-w-[700px] mx-auto px-4 sm:px-6">
-          <h2 className={`font-['Poppins'] font-bold text-2xl text-center mb-6 ${heroText}`}>FAQ</h2>
-          <div className="flex flex-col gap-3 reveal">
-            {faqs.map((f, i) => (
-              <div key={i} className={`border rounded-2xl overflow-hidden transition-all ${faqBorder(faqOpen === i)}`}>
-                <button onClick={() => setFaqOpen(faqOpen === i ? null : i)} className={`w-full flex justify-between items-center px-5 py-4 text-left text-sm font-medium ${heroText}`}>
-                  {f.q} <span className={`text-[#13221B] text-xl ml-4 ${faqOpen === i ? 'rotate-45' : ''} transition-transform`}>+</span>
-                </button>
-                <div className={`accordion-body ${faqOpen === i ? 'open' : ''}`}>
-                  <p className={`px-5 pb-4 text-sm leading-relaxed ${textMuted}`}>{f.a}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
     </div>
   )
 }

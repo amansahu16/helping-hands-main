@@ -9,34 +9,7 @@ import imgFood from '../images/donate_food.png'
 import imgGoods from '../images/donate_goods.png'
 import FeatureCard from '../../components/FeatureCard'
 
-function FAQAccordion({ items, isDark }) {
-  const [open, setOpen] = useState(null)
 
-  const accordionBorder = (i) => open === i
-    ? 'border-[#13221B]/50 shadow-[0_0_15px_rgba(108,99,255,0.1)]'
-    : isDark ? 'border-white/8' : 'border-[#E0E7FF]'
-  const accordionBtnText = isDark ? 'text-white hover:bg-white/[0.03]' : 'text-[#1E1B4B] hover:bg-[#EEF2FF]'
-  const answerText = isDark ? 'text-[#8888AA]' : 'text-[#6366F1]'
-
-  return (
-    <div className="flex flex-col gap-3">
-      {items.map((item, i) => (
-        <div key={i} className={`border rounded-2xl overflow-hidden transition-all duration-300 ${accordionBorder(i)}`}>
-          <button
-            onClick={() => setOpen(open === i ? null : i)}
-            className={`w-full flex justify-between items-center px-5 py-4 text-left text-sm font-semibold transition-colors ${accordionBtnText}`}
-          >
-            {item.q}
-            <span className={`text-[#13221B] text-xl ml-4 ${open === i ? 'rotate-45' : ''} transition-transform`}>+</span>
-          </button>
-          <div className={`accordion-body ${open === i ? 'open' : ''}`}>
-            <p className={`px-5 pb-4 text-sm leading-relaxed ${answerText}`}>{item.a}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export default function DonateItems() {
   useScrollReveal()
@@ -60,12 +33,7 @@ export default function DonateItems() {
     { name: 'Sanjay M.', role: 'Recipient via NGO', text: 'We received food donations within 2 hours of a request through Helping Hands. Truly life-saving during floods.', initial: 'S' },
   ]
 
-  const faqs = [
-    { q: 'What items can I donate?', a: 'Clothes, food (sealed), books, toys, kitchen items, electronics in working condition, and more.' },
-    { q: "What can't be donated?", a: 'Expired food, damaged/unsafe items, hazardous materials, or items requiring special handling.' },
-    { q: 'How is pickup arranged?', a: 'After listing, you can schedule a pickup with the recipient or arrange a drop-off at a nearby collection point.' },
-    { q: 'Is there a fee for donating?', a: 'No. The platform is completely free for donors.' },
-  ]
+
 
   // Theme-aware styles
   const heroText = isDark ? 'text-white' : 'text-[#1E1B4B]'
@@ -161,15 +129,7 @@ export default function DonateItems() {
 
 
 
-      {/* FAQ */}
-      <section className={`py-16 ${sectionBgAlt}`}>
-        <div className="max-w-[700px] mx-auto px-4 sm:px-6">
-          <h2 className={`font-['Poppins'] font-bold text-3xl text-center mb-8 ${heroText}`}>FAQ</h2>
-          <div className="reveal">
-            <FAQAccordion items={faqs} isDark={isDark} />
-          </div>
-        </div>
-      </section>
+
     </div>
   )
 }
