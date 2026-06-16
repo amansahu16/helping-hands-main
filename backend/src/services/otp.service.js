@@ -15,6 +15,7 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT || "587"),
   secure: false, // false for port 587
+  family: 4,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -39,6 +40,11 @@ export const sendAdminLoginOtp = async (email) => {
   console.log(`[OTP SERVICE] Generated Admin OTP "${otp}" for ${email}`);
 
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+
+    transporter.verify()
+      .then(() => console.log("✅ SMTP Connected"))
+      .catch(err => console.error("❌ SMTP Error:", err));
+
     transporter.sendMail({
       from: `"Helping Hands Admin" <${process.env.SMTP_USER}>`,
       to: email,
