@@ -14,7 +14,7 @@ const otpStore = new Map();
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_SECURE === "true", // false for port 587
+  secure: false, // false for port 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -35,7 +35,7 @@ export const sendAdminLoginOtp = async (email) => {
     otp,
     expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes expiry
   });
-  
+
   console.log(`[OTP SERVICE] Generated Admin OTP "${otp}" for ${email}`);
 
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -76,7 +76,7 @@ export const sendOtp = async (email, purpose = "verification") => {
     otp,
     expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes expiry
   });
-  
+
   console.log(`[OTP SERVICE] Sent OTP "${otp}" to ${email} for ${purpose}`);
   return true;
 };
