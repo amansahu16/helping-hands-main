@@ -165,7 +165,10 @@ async function getNearbyRescueRequests(req, res) {
           { nearbyCenterId: req.user.id }
         ]
       },
-      include: { reporter: { select: { id: true, name: true, phoneNumber: true } } },
+      include: {
+        reporter: { select: { id: true, name: true, phoneNumber: true } },
+        reporterNgo: { select: { id: true, name: true, phoneNumber: true } }
+      },
       orderBy: { createdAt: "desc" },
     });
 

@@ -48,7 +48,7 @@ model RescueRequest {
   nearbyHospital String?      @map("nearby_hospital")
   status         RescueStatus @default(OPEN)
   createdAt      DateTime     @default(now()) @map("created_at")
-  nearbyCenter   Ngo?         @relation(fields: [nearbyCenterId], references: [id])
+  nearbyCenter   Ngo?         @relation("NgoClaimedRescues", fields: [nearbyCenterId], references: [id])
   reporter       User?        @relation(fields: [reporterId], references: [id])
   reporterNgoId  String?      @map("reporter_ngo_id")
   reporterNgo    Ngo?         @relation("NgoReportedRescues", fields: [reporterNgoId], references: [id])

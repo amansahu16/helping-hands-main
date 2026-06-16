@@ -250,7 +250,14 @@ async function listOperations(req, res) {
     const [campaigns, donations, rescues, users, ngos] = await Promise.all([
       prisma.campaign.findMany({ include: { organizerUser: { select: { name: true } }, organizerNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
       prisma.donation.findMany({ include: { donor: { select: { name: true } }, donorNgo: { select: { name: true } }, recipientNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
-      prisma.rescueRequest.findMany({ include: { reporter: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
+      prisma.rescueRequest.findMany({
+        include: {
+          reporter: { select: { name: true } },
+          reporterNgo: { select: { name: true } },
+          nearbyCenter: { select: { name: true } }
+        },
+        orderBy: { createdAt: "desc" }
+      }),
       prisma.user.findMany({ select: { id: true, name: true, email: true, phoneNumber: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
       prisma.ngo.findMany({ select: { id: true, name: true, email: true, registrationNumber: true, verified: true, createdAt: true }, orderBy: { createdAt: "desc" } })
     ]);

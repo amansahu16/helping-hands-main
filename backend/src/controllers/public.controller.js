@@ -229,7 +229,10 @@ async function getOsmShelters(req, res) {
     const response = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: "data=" + encodeURIComponent(query),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "HelpingHandsPlatform/1.0 (https://github.com/amansahu16/helping-hands-main)"
+      },
     });
 
     if (!response.ok) {

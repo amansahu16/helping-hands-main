@@ -537,7 +537,7 @@ export default function Home() {
                 ) : (
                   <div className="divide-y divide-white/5 space-y-3">
                     {leaderboard.map((u, i) => {
-                      const medal = i === 0 ? '' : i === 1 ? '' : i === 2 ? '' : `${i + 1}`
+                      const medal = i === 0 ? '1' : i === 1 ? '2' : i === 2 ? '3' : `${i + 1}`
                       const medalColor = i === 0 ? 'text-[#FFD700]' : i === 1 ? 'text-[#C0C0C0]' : i === 2 ? 'text-[#CD7F32]' : 'text-slate-400'
                       return (
                         <div key={u.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">

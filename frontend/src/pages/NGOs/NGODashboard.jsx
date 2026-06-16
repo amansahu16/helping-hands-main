@@ -584,7 +584,7 @@ export default function NGODashboard() {
                                 <div className="flex justify-between items-start gap-2 flex-wrap">
                                   <div>
                                     <h4 className={`font-bold text-sm ${textTitle}`}>{r.animalType} - {r.condition}</h4>
-                                    <p className={`text-[10px] ${textMuted}`}>Reporter: <strong className={textTitle}>{r.reporter?.name || 'Anonymous'}</strong> ({r.reporter?.phoneNumber || 'No phone'})</p>
+                                    <p className={`text-[10px] ${textMuted}`}>Reporter: <strong className={textTitle}>{r.reporter?.name || r.reporterNgo?.name || 'Anonymous'}</strong> ({r.reporter?.phoneNumber || r.reporterNgo?.phoneNumber || 'No phone'})</p>
                                   </div>
                                 </div>
                                 <p className={`text-xs ${textTitle}`}><strong>Details:</strong> {r.description}</p>

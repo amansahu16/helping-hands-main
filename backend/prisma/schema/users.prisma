@@ -55,7 +55,7 @@ model Ngo {
   donationsReceived    Donation[]      @relation("NgoReceivedDonations")
   posts                NgoPost[]
   reviews              NgoReview[]
-  rescueRequestsNearby RescueRequest[]
+  rescueRequestsNearby RescueRequest[] @relation("NgoClaimedRescues")
   rescueRequestsReported RescueRequest[] @relation("NgoReportedRescues")
 
   @@map("ngos")

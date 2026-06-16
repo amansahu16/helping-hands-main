@@ -335,7 +335,7 @@ export default function AdminDashboard() {
                           { label: 'Registered Users', val: stats.core.users, icon: <Users size={18} /> },
                           { label: 'Registered NGOs', val: stats.core.ngos, icon: <Building size={18} /> },
                           { label: 'Total Donations', val: stats.core.donations, icon: <Heart size={18} /> },
-                          { label: 'Animals Rescued', val: stats.core.animals, icon: <Shield size={18} /> },
+                          { label: 'Animals Rescued', val: stats.rescues.resolved, icon: <Shield size={18} /> },
                           { label: 'Animals Adopted', val: stats.welfare.adopted, icon: <CheckCircle size={18} /> },
                           { label: 'Animals Fed', val: stats.welfare.fed, icon: <Calendar size={18} /> },
                         ].map((m, i) => (
@@ -613,13 +613,16 @@ export default function AdminDashboard() {
                           {/* RESCUES */}
                           {opType === 'rescue' && (
                             operations.rescues
-                              .filter(r => (r.animalType || '').toLowerCase().includes(opSearch.toLowerCase()) || (r.reporter?.name || '').toLowerCase().includes(opSearch.toLowerCase()))
+                              .filter(r => (r.animalType || '').toLowerCase().includes(opSearch.toLowerCase()) || (r.reporter?.name || r.reporterNgo?.name || '').toLowerCase().includes(opSearch.toLowerCase()))
                               .map(r => (
                                 <div key={r.id} className={`p-4 rounded-xl border flex justify-between items-start gap-4 ${isDark ? 'bg-white/[0.01] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                                   <div>
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 uppercase`}>{r.status}</span>
-                                      <span className={`text-[10px] ${textMuted}`}>Reporter: <strong className={textTitle}>{r.reporter?.name || 'Anonymous'}</strong></span>
+                                      <span className={`text-[10px] ${textMuted}`}>Reporter: <strong className={textTitle}>{r.reporter?.name || r.reporterNgo?.name || 'Anonymous'}</strong></span>
+                                      {r.nearbyCenter && (
+                                        <span className={`text-[10px] ${textMuted}`}> | Assigned NGO: <strong className={textTitle}>{r.nearbyCenter.name}</strong></span>
+                                      )}
                                     </div>
                                     <h4 className={`font-bold text-sm ${textTitle}`}>{r.animalType} ({r.condition})</h4>
                                     <p className={`text-xs mt-1 ${textMuted}`}>{r.description}</p>
