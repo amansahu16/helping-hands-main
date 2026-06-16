@@ -673,34 +673,37 @@ export default function VolunteerDashboard() {
                         <form onSubmit={handleProfileUpdate} className="flex flex-col gap-4">
                           <div className="grid sm:grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Full Name</label>
-                              <input value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} required className={inputClass} />
+                              <label htmlFor="profile-name" className={`text-xs font-bold ${textMuted}`}>Full Name</label>
+                              <input id="profile-name" name="name" autoComplete="name" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} required className={inputClass} />
                             </div>
                             <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Email Address (Read-only)</label>
-                              <input value={user?.email || ''} readOnly className={`${inputClass} opacity-60 cursor-not-allowed`} />
-                            </div>
-                          </div>
-
-                          <div className="grid sm:grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Phone Number</label>
-                              <input value={profileForm.phoneNumber} onChange={e => setProfileForm({ ...profileForm, phoneNumber: e.target.value })} placeholder="e.g. +91 9876543210" className={inputClass} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Date of Birth</label>
-                              <input type="date" value={profileForm.dateOfBirth} onChange={e => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })} className={inputClass} />
+                              <label htmlFor="profile-email" className={`text-xs font-bold ${textMuted}`}>Email Address (Read-only)</label>
+                              <input id="profile-email" name="email" autoComplete="email" value={user?.email || ''} readOnly className={`${inputClass} opacity-60 cursor-not-allowed`} />
                             </div>
                           </div>
 
                           <div className="grid sm:grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Occupation / Skillset</label>
-                              <input value={profileForm.occupation} onChange={e => setProfileForm({ ...profileForm, occupation: e.target.value })} placeholder="e.g. Doctor, Student, Vet, Software Engineer" className={inputClass} />
+                              <label htmlFor="profile-phone" className={`text-xs font-bold ${textMuted}`}>Phone Number</label>
+                              <input id="profile-phone" name="phone" autoComplete="tel" value={profileForm.phoneNumber} onChange={e => setProfileForm({ ...profileForm, phoneNumber: e.target.value })} placeholder="e.g. +91 9876543210" className={inputClass} />
                             </div>
                             <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Location (City, Area)</label>
+                              <label htmlFor="profile-dob" className={`text-xs font-bold ${textMuted}`}>Date of Birth</label>
+                              <input id="profile-dob" name="dob" autoComplete="bday" type="date" value={profileForm.dateOfBirth} onChange={e => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })} className={inputClass} />
+                            </div>
+                          </div>
+
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1.5">
+                              <label htmlFor="profile-occupation" className={`text-xs font-bold ${textMuted}`}>Occupation / Skillset</label>
+                              <input id="profile-occupation" name="occupation" autoComplete="organization-title" value={profileForm.occupation} onChange={e => setProfileForm({ ...profileForm, occupation: e.target.value })} placeholder="e.g. Doctor, Student, Vet, Software Engineer" className={inputClass} />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label htmlFor="profile-location" className={`text-xs font-bold ${textMuted}`}>Location (City, Area)</label>
                               <LocationAutocomplete
+                                id="profile-location"
+                                name="location"
+                                autocomplete="street-address"
                                 value={profileForm.location}
                                 onChange={(val) => setProfileForm({ ...profileForm, location: val })}
                                 onSelectLocation={({ locationStr, latitude, longitude }) => {

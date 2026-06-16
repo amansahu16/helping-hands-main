@@ -80,6 +80,7 @@ async function deleteAccount(req, res) {
  
 async function getMyDonations(req, res) {
   try {
+    console.log(`[USER CONTROLLER] Fetching donations for user: ${req.user?.id}`);
     const donations = await prisma.donation.findMany({
       where: { donorId: req.user.id },
       include: { items: true, recipientNgo: { select: { id: true, name: true, photoUrl: true, registrationNumber: true, upiId: true } } },
@@ -87,7 +88,8 @@ async function getMyDonations(req, res) {
     });
     return res.json(donations);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    console.error("[USER CONTROLLER] getMyDonations Error:", err);
+    return res.status(500).json({ message: err.message, error: err.stack });
   }
 }
  

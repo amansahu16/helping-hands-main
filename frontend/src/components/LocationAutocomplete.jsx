@@ -7,7 +7,10 @@ export default function LocationAutocomplete({
   placeholder = 'Search address...',
   inputClass = '',
   isDark = false,
-  onSelectLocation
+  onSelectLocation,
+  id,
+  name,
+  autocomplete = 'street-address'
 }) {
   const [query, setQuery] = useState(value || '')
   const [suggestions, setSuggestions] = useState([])
@@ -106,6 +109,9 @@ export default function LocationAutocomplete({
       <div className="relative">
         <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555577] z-10" />
         <input
+          id={id}
+          name={name}
+          autoComplete={autocomplete}
           type="text"
           value={query}
           onChange={handleInputChange}

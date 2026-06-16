@@ -28,5 +28,8 @@ router.post("/contact",       publicController.sendContactMessage);
 // Locations
 router.get("/locations",      publicController.listLocations);
 router.get("/locations/:id",  publicController.getLocationById);
- 
+
+// OSM Proxy
+router.post("/osm-shelters",    publicController.getOsmShelters);
+
 export default router;

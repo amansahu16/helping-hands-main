@@ -47,12 +47,7 @@ async function findNearbyVetAndShelters(lat, lon, radiusKm = 10) {
   `.trim()
 
   try {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: 'data=' + encodeURIComponent(query),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    })
-    const data = await res.json()
+    const { data } = await api.post('/public/osm-shelters', { query })
 
     return (data.elements || []).map(el => {
       const elLat = el.lat || el.center?.lat

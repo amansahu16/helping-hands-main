@@ -121,6 +121,7 @@ async function changePassword(req, res) {
  
 async function getMyDonations(req, res) {
   try {
+    console.log(`[NGO CONTROLLER] Fetching donations for NGO: ${req.user?.id}`);
     const donations = await prisma.donation.findMany({
       where: { recipientNgoId: req.user.id },
       include: {
@@ -132,7 +133,8 @@ async function getMyDonations(req, res) {
     });
     return res.json(donations);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    console.error("[NGO CONTROLLER] getMyDonations Error:", err);
+    return res.status(500).json({ message: err.message, error: err.stack });
   }
 }
  

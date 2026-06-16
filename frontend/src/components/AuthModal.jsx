@@ -171,7 +171,11 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
             <p className={`text-xs mt-1 ${isDark ? 'text-[#555577]' : 'text-[#A5B4FC]'}`}>(Use <strong>123456</strong> for testing)</p>
           </div>
           <form onSubmit={handleVerify} className="flex flex-col gap-3">
+            <label htmlFor="otp-input" className="sr-only">Enter 6-digit OTP</label>
             <input
+              id="otp-input"
+              name="otp"
+              autoComplete="one-time-code"
               value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="Enter 6-digit OTP"
               className={`w-full px-4 py-3 rounded-xl border text-center text-xl font-bold tracking-widest focus:outline-none focus:ring-2 transition-all ${inputCls}`}
@@ -477,8 +481,8 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
                 {/* ── REGISTER FIELDS ──────────────────────── */}
                 {tab === 'register' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className={labelClass}>Full Name *</label>
-                    <input name="name" value={form.name} onChange={change} required
+                    <label htmlFor="name-input" className={labelClass}>Full Name *</label>
+                    <input id="name-input" name="name" autoComplete="name" value={form.name} onChange={change} required
                       placeholder="e.g. Aman Sahu"
                       className={inputClass} />
                   </div>
@@ -486,18 +490,18 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
                 {/* ── EMAIL ────────────────────────────────── */}
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelClass}>Email Address *</label>
-                  <input name="email" type="email" value={form.email} onChange={change} required
+                  <label htmlFor="email-input" className={labelClass}>Email Address *</label>
+                  <input id="email-input" name="email" type="email" autoComplete="email" value={form.email} onChange={change} required
                     placeholder="email@example.com" className={inputClass} />
                 </div>
 
                 {/* ── PHONE (register only) ─────────────────── */}
                 {tab === 'register' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className={labelClass}>Phone Number *</label>
+                    <label htmlFor="phone-input" className={labelClass}>Phone Number *</label>
                     <div className="relative">
                       <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A5B4FC]" />
-                      <input name="phone" type="tel" value={form.phone} onChange={change}
+                      <input id="phone-input" name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={change}
                         required
                         placeholder="+91 XXXXX XXXXX"
                         className={`${inputClass} pl-9`} />
@@ -507,9 +511,9 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
                 {/* ── PASSWORD ─────────────────────────────── */}
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelClass}>Password *</label>
+                  <label htmlFor="password-input" className={labelClass}>Password *</label>
                   <div className="relative">
-                    <input name="password" type={showPw ? 'text' : 'password'} value={form.password} onChange={change}
+                    <input id="password-input" name="password" type={showPw ? 'text' : 'password'} autoComplete={tab === 'login' ? 'current-password' : 'new-password'} value={form.password} onChange={change}
                       required minLength={8} maxLength={16} placeholder="Create a strong password" className={`${inputClass} pr-11`} />
                     <button type="button" onClick={() => setShowPw(s => !s)}
                       className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-[#555577] hover:text-[#2E7D59]' : 'text-[#A5B4FC] hover:text-[#13221B]'}`}>
@@ -523,10 +527,12 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
                   <>
                     {/* Date of Birth */}
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelClass}>Date of Birth (optional)</label>
+                      <label htmlFor="dob-input" className={labelClass}>Date of Birth (optional)</label>
                       <input
+                        id="dob-input"
                         name="dateOfBirth"
                         type="date"
+                        autoComplete="bday"
                         value={form.dateOfBirth}
                         onChange={change}
                         className={inputClass}
@@ -535,9 +541,11 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
                     {/* Occupation */}
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelClass}>Occupation (optional)</label>
+                      <label htmlFor="occupation-input" className={labelClass}>Occupation (optional)</label>
                       <input
+                        id="occupation-input"
                         name="occupation"
+                        autoComplete="organization-title"
                         value={form.occupation}
                         onChange={change}
                         placeholder="e.g. Student, Social Worker"
@@ -555,9 +563,12 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
                     {/* Location */}
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelClass}>Location (optional)</label>
+                      <label htmlFor="location-input" className={labelClass}>Location (optional)</label>
                       <div className="flex gap-2">
                         <LocationAutocomplete
+                          id="location-input"
+                          name="location"
+                          autocomplete="street-address"
                           value={form.location}
                           onChange={(val) => setForm(f => ({ ...f, location: val }))}
                           onSelectLocation={({ locationStr, latitude, longitude }) => {

@@ -36,12 +36,7 @@ async function findNearbyVetAndShelters(lat, lon, radiusKm = 10) {
     out center;
   `.trim()
 
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: 'data=' + encodeURIComponent(query),
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-  })
-  const data = await res.json()
+  const { data } = await api.post('/public/osm-shelters', { query })
 
   return (data.elements || []).map(el => {
     const elLat = el.lat || el.center?.lat
@@ -617,15 +612,15 @@ export default function RescueShelter() {
 
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className={labelClass}>Animal Type *</label>
-                        <select name="animalType" value={form.animalType} onChange={change}
+                        <label htmlFor="animal-type-select" className={labelClass}>Animal Type *</label>
+                        <select id="animal-type-select" name="animalType" autoComplete="off" value={form.animalType} onChange={change}
                           className={`w-full ${selectClass}`}>
                           {animalTypes.map(t => <option key={t}>{t}</option>)}
                         </select>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className={labelClass}>Condition *</label>
-                        <select name="condition" value={form.condition} onChange={change} required
+                        <label htmlFor="condition-select" className={labelClass}>Condition *</label>
+                        <select id="condition-select" name="condition" autoComplete="off" value={form.condition} onChange={change} required
                           className={`w-full ${selectClass}`}>
                           <option value="">Select condition…</option>
                           {conditions.map(c => (
@@ -648,8 +643,8 @@ export default function RescueShelter() {
                           After submitting, this animal will appear in the <strong>Adopt a Pet</strong> section with your details and photos.
                         </p>
                         <div className="flex flex-col gap-1">
-                          <label className={labelClass}>Animal Name (optional)</label>
-                          <input name="animalName" value={form.animalName} onChange={change}
+                          <label htmlFor="animal-name-input" className={labelClass}>Animal Name (optional)</label>
+                          <input id="animal-name-input" name="animalName" autoComplete="off" value={form.animalName} onChange={change}
                             placeholder="e.g. Buddy, Mittens…"
                             className={inputClass} />
                         </div>
@@ -657,18 +652,21 @@ export default function RescueShelter() {
                     )}
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelClass}>Description * <span className={`text-[10px] ${labelMutedClass}`}>(what you see, urgency level)</span></label>
-                      <textarea name="description" value={form.description} onChange={change} required rows={4}
+                      <label htmlFor="description-textarea" className={labelClass}>Description * <span className={`text-[10px] ${labelMutedClass}`}>(what you see, urgency level)</span></label>
+                      <textarea id="description-textarea" name="description" autoComplete="off" value={form.description} onChange={change} required rows={4}
                         placeholder="Describe the animal's situation in detail. E.g. 'A brown dog with a bleeding leg, unable to walk, near the main road gate…'"
                         className={`${inputClass} resize-none`} />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelClass}>
+                      <label htmlFor="rescue-location-input" className={labelClass}>
                         Exact Location * <span className="text-[#3D6A53] text-[10px] font-bold">REQUIRED for shelters to reach you</span>
                       </label>
                       <div className="flex gap-2">
                         <LocationAutocomplete
+                          id="rescue-location-input"
+                          name="location"
+                          autocomplete="street-address"
                           value={form.location}
                           onChange={(val) => setForm(f => ({ ...f, location: val }))}
                           onSelectLocation={async ({ locationStr, latitude, longitude }) => {

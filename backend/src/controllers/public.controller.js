@@ -219,6 +219,31 @@ async function getAnimalStats(req, res) {
   }
 }
 
+async function getOsmShelters(req, res) {
+  try {
+    const { query } = req.body;
+    if (!query) {
+      return res.status(400).json({ message: "Query is required" });
+    }
+
+    const response = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: "data=" + encodeURIComponent(query),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Overpass API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return res.json(data);
+  } catch (err) {
+    console.error("Error calling Overpass API:", err.message);
+    return res.status(500).json({ message: "Failed to fetch from Overpass API", error: err.message });
+  }
+}
+
 export const publicController = {
   listFaqs,
   listTestimonials, createTestimonial,
@@ -228,4 +253,5 @@ export const publicController = {
   getStats,
   getLeaderboard,
   getAnimalStats,
+  getOsmShelters,
 };
