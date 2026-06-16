@@ -6,6 +6,21 @@ if (typeof dns.setDefaultResultOrder === "function") {
   dns.setDefaultResultOrder("ipv4first");
 }
 
+// Intercept dns.lookup to force IPv4 (family: 4) specifically for the SMTP host.
+// This prevents ENETUNREACH errors on platforms like Render where IPv6 is misconfigured or unreachable.
+const originalLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  const cb = typeof options === "function" ? options : callback;
+  const opts = typeof options === "object" ? options : {};
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+
+  if (hostname === smtpHost) {
+    return originalLookup(hostname, { ...opts, family: 4 }, cb);
+  }
+  return originalLookup(hostname, options, callback);
+};
+
+
 // In-memory OTP storage for development
 const otpStore = new Map();
 
