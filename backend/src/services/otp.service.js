@@ -1,27 +1,11 @@
-import nodemailer from "nodemailer";
-import dns from "dns";
 
-// Prefer IPv4 before IPv6
-if (typeof dns.setDefaultResultOrder === "function") {
-  dns.setDefaultResultOrder("ipv4first");
-}
+import { Resend } from "resend";
 
-// In-memory OTP store
+// In-memory OTP storage
 const otpStore = new Map();
 
-// SMTP transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false, // STARTTLS on port 587
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 15000,
-});
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Send Admin Login OTP
 export const sendAdminLoginOtp = async (email) => {
@@ -34,31 +18,18 @@ export const sendAdminLoginOtp = async (email) => {
 
   console.log(`[OTP SERVICE] Generated OTP for ${email}`);
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("[OTP SERVICE] SMTP credentials missing.");
-    console.log(`[OTP SERVICE] OTP: ${otp}`);
-    return otp;
-  }
-
   try {
-    // Verify SMTP connection
-    await transporter.verify();
-    console.log("✅ SMTP Connected");
-
-    const info = await transporter.sendMail({
-      from: `"Helping Hands Admin" <${process.env.SMTP_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: "onboarding@resend.dev",
       to: email,
       subject: "Helping Hands Admin Portal Login Verification Code",
-      text: `Your verification code is ${otp}. This code is valid for 10 minutes.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
           <h2>Helping Hands Admin Portal</h2>
 
           <p>Hello Admin,</p>
 
-          <p>
-            Use the following verification code to complete your login:
-          </p>
+          <p>Please use the following verification code to complete your login:</p>
 
           <div style="
             font-size:32px;
@@ -72,17 +43,19 @@ export const sendAdminLoginOtp = async (email) => {
             ${otp}
           </div>
 
-          <p>
-            This code is valid for 10 minutes.
-          </p>
+          <p>This code is valid for 10 minutes.</p>
         </div>
       `,
     });
 
-    console.log("✅ Email sent successfully");
-    console.log("Message ID:", info.messageId);
+    if (error) {
+      console.error("❌ Resend Error:", error);
+    } else {
+      console.log("✅ Email sent successfully");
+      console.log(data);
+    }
   } catch (error) {
-    console.error("❌ SMTP SEND FAILED");
+    console.error("❌ Failed to send email");
     console.error(error);
 
     console.log(`[OTP SERVICE] FALLBACK OTP: ${otp}`);
@@ -124,13 +97,15 @@ export const verifyOtp = async (email, otp) => {
 
   if (record.otp !== otp) {
     console.log(
-      `[OTP SERVICE] OTP mismatch for ${email}. Expected ${record.otp}, received ${otp}`
+      `[OTP SERVICE] OTP mismatch for ${email}. Expected ${record.otp}, got ${otp}`
     );
     return false;
   }
 
   otpStore.delete(email);
+
   console.log(`[OTP SERVICE] OTP verified successfully for ${email}`);
 
   return true;
 };
+
