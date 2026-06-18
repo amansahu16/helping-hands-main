@@ -44,36 +44,38 @@ export const sendAdminLoginOtp = async (email) => {
 
   console.log(`[OTP SERVICE] Generated OTP "${otp}" for Admin: ${email}`);
 
-  // Send email in the background without awaiting
-  transporter.sendMail({
-    from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
-    to: email,
-    subject: "Helping Hands Admin Portal Login Verification Code",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
-        <h2>Helping Hands Admin Portal</h2>
-        <p>Hello Admin,</p>
-        <p>Please use the following verification code to complete your login:</p>
-        <div style="
-          font-size:32px;
-          font-weight:bold;
-          text-align:center;
-          letter-spacing:5px;
-          padding:20px;
-          background:#f5f5f5;
-          border-radius:8px;
-        ">
-          ${otp}
+  // Send email in the background without awaiting (deferred via setImmediate)
+  setImmediate(() => {
+    transporter.sendMail({
+      from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
+      to: email,
+      subject: "Helping Hands Admin Portal Login Verification Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
+          <h2>Helping Hands Admin Portal</h2>
+          <p>Hello Admin,</p>
+          <p>Please use the following verification code to complete your login:</p>
+          <div style="
+            font-size:32px;
+            font-weight:bold;
+            text-align:center;
+            letter-spacing:5px;
+            padding:20px;
+            background:#f5f5f5;
+            border-radius:8px;
+          ">
+            ${otp}
+          </div>
+          <p>This code is valid for 10 minutes.</p>
         </div>
-        <p>This code is valid for 10 minutes.</p>
-      </div>
-    `,
-  })
-  .then(() => {
-    console.log("✅ Admin Login OTP Email sent successfully via SMTP");
-  })
-  .catch((error) => {
-    console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
+      `,
+    })
+    .then(() => {
+      console.log("✅ Admin Login OTP Email sent successfully via SMTP");
+    })
+    .catch((error) => {
+      console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
+    });
   });
 
   return otp;
@@ -104,36 +106,38 @@ export const sendOtp = async (email, purpose = "verification") => {
     ? "Please use the following verification code to reset your password:"
     : "Thank you for joining Helping Hands. Please use the following verification code to complete your verification:";
 
-  // Send email in the background without awaiting
-  transporter.sendMail({
-    from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
-    to: email,
-    subject: subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
-        <h2>Helping Hands</h2>
-        <h3>${title}</h3>
-        <p>${message}</p>
-        <div style="
-          font-size:32px;
-          font-weight:bold;
-          text-align:center;
-          letter-spacing:5px;
-          padding:20px;
-          background:#f5f5f5;
-          border-radius:8px;
-        ">
-          ${otp}
+  // Send email in the background without awaiting (deferred via setImmediate)
+  setImmediate(() => {
+    transporter.sendMail({
+      from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
+      to: email,
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
+          <h2>Helping Hands</h2>
+          <h3>${title}</h3>
+          <p>${message}</p>
+          <div style="
+            font-size:32px;
+            font-weight:bold;
+            text-align:center;
+            letter-spacing:5px;
+            padding:20px;
+            background:#f5f5f5;
+            border-radius:8px;
+          ">
+            ${otp}
+          </div>
+          <p>This code is valid for 10 minutes.</p>
         </div>
-        <p>This code is valid for 10 minutes.</p>
-      </div>
-    `,
-  })
-  .then(() => {
-    console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
-  })
-  .catch((error) => {
-    console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
+      `,
+    })
+    .then(() => {
+      console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
+    })
+    .catch((error) => {
+      console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
+    });
   });
 
   return otp;

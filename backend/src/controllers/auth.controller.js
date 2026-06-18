@@ -93,8 +93,8 @@ async function registerUser(req, res) {
 
     const user = mapRowKeys(insertRes.rows[0]);
 
-    // Send verification OTP
-    try { await sendOtp(email); } catch { }
+    // Send verification OTP in background
+    try { sendOtp(email); } catch { }
 
     return res.status(201).json({
       message: "Registered successfully! You can now login.",
@@ -169,7 +169,7 @@ async function resendUserOtp(req, res) {
     const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     const user = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!user) return res.status(404).json({ message: "User not found" });
-    await sendOtp(email);
+    sendOtp(email).catch((err) => console.error("Error resending user OTP:", err));
     return res.json({ message: "OTP resent" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -180,7 +180,7 @@ async function forgotUserPassword(req, res) {
   const { email } = req.body;
   const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
   const user = rows[0] ? mapRowKeys(rows[0]) : null;
-  if (user) await sendOtp(email, "reset");
+  if (user) sendOtp(email, "reset").catch((err) => console.error("Error sending user forgot password OTP:", err));
   return res.json({ message: "If that email exists, a reset OTP has been sent." });
 }
 
@@ -276,7 +276,7 @@ async function registerNgo(req, res) {
 
     const ngo = mapRowKeys(insertRes.rows[0]);
 
-    try { await sendOtp(email); } catch { }
+    try { sendOtp(email); } catch { }
 
     return res.status(201).json({
       message: "NGO registered successfully! You can now login.",
@@ -351,7 +351,7 @@ async function resendNgoOtp(req, res) {
     const { rows } = await pool.query("SELECT * FROM ngos WHERE email = $1", [email]);
     const ngo = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!ngo) return res.status(404).json({ message: "NGO not found" });
-    await sendOtp(email);
+    sendOtp(email).catch((err) => console.error("Error resending NGO OTP:", err));
     return res.json({ message: "OTP resent" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -362,7 +362,7 @@ async function forgotNgoPassword(req, res) {
   const { email } = req.body;
   const { rows } = await pool.query("SELECT * FROM ngos WHERE email = $1", [email]);
   const ngo = rows[0] ? mapRowKeys(rows[0]) : null;
-  if (ngo) await sendOtp(email, "reset");
+  if (ngo) sendOtp(email, "reset").catch((err) => console.error("Error sending NGO forgot password OTP:", err));
   return res.json({ message: "If that email exists, a reset OTP has been sent." });
 }
 

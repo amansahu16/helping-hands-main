@@ -72,8 +72,8 @@ async function loginAdmin(req, res) {
     const valid = await comparePassword(password, admin.passwordHash);
     if (!valid) return res.status(401).json({ message: "Invalid admin credentials" });
 
-    // Send login OTP instead of generating token immediately
-    await sendAdminLoginOtp(admin.email);
+    // Send login OTP in the background (non-blocking)
+    sendAdminLoginOtp(admin.email).catch((err) => console.error("Error sending admin login OTP:", err));
 
     return res.json({
       success: true,
@@ -129,7 +129,7 @@ async function forgotAdminPassword(req, res) {
     const { rows } = await pool.query("SELECT * FROM admins WHERE email = $1", [email]);
     const admin = rows[0] ? mapRowKeys(rows[0]) : null;
     if (admin) {
-      await sendOtp(email, "reset");
+      sendOtp(email, "reset").catch((err) => console.error("Error sending admin forgot password OTP:", err));
     }
     return res.json({ message: "If that email exists, a reset OTP has been sent." });
   } catch (err) {
