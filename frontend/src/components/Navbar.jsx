@@ -335,9 +335,7 @@ export default function Navbar() {
                     >
                       Login
                     </button>
-                    <button onClick={openReg} className="w-full py-2.5 text-center text-sm font-semibold rounded-xl bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white">
-                      Register
-                    </button>
+
                   </>
                 )}
                 {user && (

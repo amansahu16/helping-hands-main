@@ -159,13 +159,13 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
       {success ? (
         <div className="text-center py-4">
           <CheckCircle size={48} className="text-[#43E97B] mx-auto mb-3" />
-          <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>Email Verified! 🎉</p>
+          <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>Email Verified! </p>
           <p className={`text-sm mt-1 ${isDark ? 'text-[#7777AA]' : 'text-[#6366F1]'}`}>Taking you to login…</p>
         </div>
       ) : (
         <>
           <div className="text-center">
-            <div className="text-4xl mb-2">📧</div>
+            <div className="text-4xl mb-2"></div>
             <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>Check Your Email</h3>
             <p className={`text-sm mt-1 ${isDark ? 'text-[#7777AA]' : 'text-[#6366F1]'}`}>Enter the OTP sent to <strong className="text-[#13221B]">{email}</strong></p>
           </div>
@@ -180,7 +180,7 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
               className={`w-full px-4 py-3 rounded-xl border text-center text-xl font-bold tracking-widest focus:outline-none focus:ring-2 transition-all ${inputCls}`}
               maxLength={6}
             />
-            {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">⚠ {error}</div>}
+            {error && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm"> {error}</div>}
             <button
               type="submit" disabled={loading}
               className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white hover:shadow-[0_0_28px_rgba(108,99,255,0.4)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
@@ -286,7 +286,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
           }
           navigate('/admin/dashboard')
         }
-        setSuccess('Welcome back! 🎉')
+        setSuccess('Welcome back! ')
         setTimeout(() => { onClose(); }, 1000)
 
       } else {
@@ -469,7 +469,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
         {step === 'forgot' && (
           <div className="flex flex-col gap-4">
             <div className="text-center">
-              <div className="text-4xl mb-2">🔑</div>
+              <div className="text-4xl mb-2"></div>
               <p className={`text-sm ${subClass}`}>
                 Enter your email address to receive a verification code for your <strong>{role === 'user' ? 'User' : role === 'ngo' ? 'NGO' : 'Admin'}</strong> account.
               </p>
@@ -501,7 +501,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
               >
                 {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending OTP…</> : 'Send Reset OTP'}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => {
@@ -521,7 +521,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
         {step === 'reset' && (
           <div className="flex flex-col gap-4">
             <div className="text-center">
-              <div className="text-4xl mb-2">🔒</div>
+              <div className="text-4xl mb-2"></div>
               <p className={`text-sm ${subClass}`}>
                 Enter the OTP sent to <strong className="text-[#13221B]">{pendingEmail}</strong> and choose a new password.
               </p>
@@ -585,7 +585,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
               >
                 {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Resetting Password…</> : 'Reset Password'}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => {

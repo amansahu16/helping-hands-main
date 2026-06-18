@@ -354,7 +354,7 @@ export default function AdminDashboard() {
                       {/* Financial Transactions stats */}
                       {stats.transactions && (
                         <div className={`p-6 rounded-2xl border ${cardBg}`}>
-                          <h4 className={`font-['Poppins'] font-bold text-sm mb-4 ${textTitle}`}>💳 Monetary Transactions Overview</h4>
+                          <h4 className={`font-['Poppins'] font-bold text-sm mb-4 ${textTitle}`}> Monetary Transactions Overview</h4>
                           <div className="grid grid-cols-2 gap-4 text-center">
                             <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
                               <span className="text-[10px] uppercase font-bold text-green-500">Transaction Count</span>
@@ -464,7 +464,7 @@ export default function AdminDashboard() {
                                     <p className={`text-xs font-bold mb-2 ${textTitle}`}>Uploaded Registration Certificate:</p>
                                     {n.certificateUrl.toLowerCase().endsWith('.pdf') ? (
                                       <a href={n.certificateUrl} target="_blank" rel="noopener noreferrer" className="text-[#2E7D59] hover:underline text-xs font-bold flex items-center gap-1">
-                                        📄 View Certificate PDF Document ↗
+                                        View Certificate PDF Document ↗
                                       </a>
                                     ) : (
                                       <div className="max-w-md overflow-hidden rounded-lg">
@@ -600,7 +600,7 @@ export default function AdminDashboard() {
                                       <p className="text-[10px] text-yellow-500 font-mono mt-0.5">Transaction ID: {d.transactionId}</p>
                                     )}
                                     <p className={`text-[10px] mt-1 font-bold ${textTitle}`}>
-                                      {d.amount ? `💳 UPI ID: ${d.recipientNgo?.upiId || 'platform'}` : `📦 Qty: ${d.quantity || 1}`} | Recipient: {d.recipientNgo?.name || 'None'}
+                                      {d.amount ? `UPI ID: ${d.recipientNgo?.upiId || 'platform'}` : `Qty: ${d.quantity || 1}`} | Recipient: {d.recipientNgo?.name || 'None'}
                                     </p>
                                   </div>
                                   <button onClick={() => handleDeleteOperation('donation', d.id)} className="p-2 text-red-500 bg-red-500/10 hover:bg-red-500/25 rounded-xl border border-red-500/20 shrink-0">
