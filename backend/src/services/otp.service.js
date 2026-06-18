@@ -1,37 +1,25 @@
 import nodemailer from "nodemailer";
-import dns from "dns";
 
 // In-memory OTP storage
 const otpStore = new Map();
 
-const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
-const smtpSecure = process.env.SMTP_SECURE !== undefined
-  ? process.env.SMTP_SECURE === "true"
-  : (smtpPort === 465);
-
-// Initialize NodeMailer SMTP Transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: smtpPort,
-  secure: smtpSecure,
+  host: process.env.SMTP_HOST || "smtp-relay.brevo.com",
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  // Custom lookup logic to force resolving hosts to IPv4 only.
-  // This completely resolves IPv6 ENETUNREACH errors on networks/platforms like Render.com.
-  lookup: (hostname, options, callback) => {
-    if (typeof options === "function") {
-      callback = options;
-      options = {};
-    }
-    const dnsOptions = {
-      ...(typeof options === "object" ? options : {}),
-      family: 4,
-    };
-    return dns.lookup(hostname, dnsOptions, callback);
-  },
 });
+
+transporter.verify()
+  .then(() => {
+    console.log("✅ Brevo SMTP Ready");
+  })
+  .catch((err) => {
+    console.error("❌ Brevo SMTP Error:", err);
+  });
 
 // Send Admin Login OTP
 export const sendAdminLoginOtp = async (email) => {
@@ -47,7 +35,7 @@ export const sendAdminLoginOtp = async (email) => {
   // Send email in the background without awaiting (deferred via setImmediate)
   setImmediate(() => {
     transporter.sendMail({
-      from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
+      from: `"Helping Hands" <${process.env.SENDER_EMAIL}>`,
       to: email,
       subject: "Helping Hands Admin Portal Login Verification Code",
       html: `
@@ -70,12 +58,12 @@ export const sendAdminLoginOtp = async (email) => {
         </div>
       `,
     })
-    .then(() => {
-      console.log("✅ Admin Login OTP Email sent successfully via SMTP");
-    })
-    .catch((error) => {
-      console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
-    });
+      .then(() => {
+        console.log("✅ Admin Login OTP Email sent successfully via SMTP");
+      })
+      .catch((error) => {
+        console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
+      });
   });
 
   return otp;
@@ -94,10 +82,10 @@ export const sendOtp = async (email, purpose = "verification") => {
     `[OTP SERVICE] Generated OTP "${otp}" for ${email} for ${purpose}`
   );
 
-  const subject = purpose === "reset" 
+  const subject = purpose === "reset"
     ? "Helping Hands - Reset Password Verification Code"
     : "Helping Hands - Email Verification Code";
-    
+
   const title = purpose === "reset"
     ? "Reset Your Password"
     : "Verify Your Email";
@@ -109,7 +97,7 @@ export const sendOtp = async (email, purpose = "verification") => {
   // Send email in the background without awaiting (deferred via setImmediate)
   setImmediate(() => {
     transporter.sendMail({
-      from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
+      from: `"Helping Hands" <${process.env.SENDER_EMAIL}>`,
       to: email,
       subject: subject,
       html: `
@@ -132,12 +120,12 @@ export const sendOtp = async (email, purpose = "verification") => {
         </div>
       `,
     })
-    .then(() => {
-      console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
-    })
-    .catch((error) => {
-      console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
-    });
+      .then(() => {
+        console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
+      })
+      .catch((error) => {
+        console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
+      });
   });
 
   return otp;
