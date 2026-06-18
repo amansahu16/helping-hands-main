@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
 
 // In-memory OTP storage
 const otpStore = new Map();
@@ -12,7 +13,11 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  family: 4, // Force connection over IPv4 to prevent IPv6 routing issues (ENETUNREACH)
+  // Custom lookup logic to force resolving hosts to IPv4 only.
+  // This completely resolves IPv6 ENETUNREACH errors on networks/platforms like Render.com.
+  lookup: (hostname, options, callback) => {
+    return dns.lookup(hostname, { ...options, family: 4 }, callback);
+  },
 });
 
 // Send Admin Login OTP
@@ -51,12 +56,12 @@ export const sendAdminLoginOtp = async (email) => {
       </div>
     `,
   })
-  .then(() => {
-    console.log("✅ Admin Login OTP Email sent successfully via SMTP");
-  })
-  .catch((error) => {
-    console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
-  });
+    .then(() => {
+      console.log("✅ Admin Login OTP Email sent successfully via SMTP");
+    })
+    .catch((error) => {
+      console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
+    });
 
   return otp;
 };
@@ -74,10 +79,10 @@ export const sendOtp = async (email, purpose = "verification") => {
     `[OTP SERVICE] Generated OTP "${otp}" for ${email} for ${purpose}`
   );
 
-  const subject = purpose === "reset" 
+  const subject = purpose === "reset"
     ? "Helping Hands - Reset Password Verification Code"
     : "Helping Hands - Email Verification Code";
-    
+
   const title = purpose === "reset"
     ? "Reset Your Password"
     : "Verify Your Email";
@@ -111,12 +116,12 @@ export const sendOtp = async (email, purpose = "verification") => {
       </div>
     `,
   })
-  .then(() => {
-    console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
-  })
-  .catch((error) => {
-    console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
-  });
+    .then(() => {
+      console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
+    })
+    .catch((error) => {
+      console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
+    });
 
   return otp;
 };
