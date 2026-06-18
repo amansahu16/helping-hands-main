@@ -87,13 +87,13 @@ async function registerUser(req, res) {
         photoUrl,
         dob,
         occupation || null,
-        true // Auto-verify for dev
+        false // Requires email verification
       ]
     );
 
     const user = mapRowKeys(insertRes.rows[0]);
 
-    // Still send OTP for UX (in dev it logs to console with code 123456)
+    // Send verification OTP
     try { await sendOtp(email); } catch { }
 
     return res.status(201).json({
@@ -154,7 +154,7 @@ async function verifyUserOtp(req, res) {
   try {
     const { email, otp } = req.body;
     const valid = await verifyOtp(email, otp);
-    if (!valid) return res.status(400).json({ message: "Invalid or expired OTP. (Use 123456 for testing)" });
+    if (!valid) return res.status(400).json({ message: "Invalid or expired OTP." });
 
     await pool.query("UPDATE users SET otp_verified = true WHERE email = $1", [email]);
     return res.json({ message: "Email verified successfully" });
@@ -269,7 +269,7 @@ async function registerNgo(req, res) {
         finalCertificateUrl,
         areaOfWork || null,
         description || null,
-        true,  // Auto-verify for dev
+        false, // Requires email verification
         false  // Pending admin approval
       ]
     );
@@ -336,7 +336,7 @@ async function verifyNgoOtp(req, res) {
   try {
     const { email, otp } = req.body;
     const valid = await verifyOtp(email, otp);
-    if (!valid) return res.status(400).json({ message: "Invalid or expired OTP. (Use 123456 for testing)" });
+    if (!valid) return res.status(400).json({ message: "Invalid or expired OTP." });
 
     await pool.query("UPDATE ngos SET otp_verified = true WHERE email = $1", [email]);
     return res.json({ message: "Email verified. You can now login." });

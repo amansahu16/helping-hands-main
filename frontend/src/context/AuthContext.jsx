@@ -112,6 +112,36 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  const forgotPasswordUser = async (email) => {
+    const { data } = await api.post('/auth/user/forgot-password', { email })
+    return data
+  }
+
+  const resetPasswordUser = async (email, otp, newPassword) => {
+    const { data } = await api.post('/auth/user/reset-password', { email, otp, newPassword })
+    return data
+  }
+
+  const forgotPasswordNgo = async (email) => {
+    const { data } = await api.post('/auth/ngo/forgot-password', { email })
+    return data
+  }
+
+  const resetPasswordNgo = async (email, otp, newPassword) => {
+    const { data } = await api.post('/auth/ngo/reset-password', { email, otp, newPassword })
+    return data
+  }
+
+  const forgotPasswordAdmin = async (email) => {
+    const { data } = await api.post('/admin/forgot-password', { email })
+    return data
+  }
+
+  const resetPasswordAdmin = async (email, otp, newPassword) => {
+    const { data } = await api.post('/admin/reset-password', { email, otp, newPassword })
+    return data
+  }
+
   const logout = async () => {
     try { await api.post('/auth/logout') } catch {}
     localStorage.removeItem('hh_user')
@@ -133,6 +163,9 @@ export function AuthProvider({ children }) {
       loginUser, loginNgo, loginAdmin,
       registerUser, registerNgo, registerAdmin,
       verifyOtpUser, verifyOtpNgo, verifyOtpAdmin,
+      forgotPasswordUser, resetPasswordUser,
+      forgotPasswordNgo, resetPasswordNgo,
+      forgotPasswordAdmin, resetPasswordAdmin,
       logout, updateUser,
     }}>
       {children}

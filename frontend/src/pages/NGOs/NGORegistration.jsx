@@ -120,7 +120,7 @@ function OtpStep({ email, onVerified, onBack, isDark }) {
       setDone(true)
       setTimeout(() => onVerified(), 1500)
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP. Use 123456 for testing.')
+      setError(err.response?.data?.message || 'Invalid OTP.')
     } finally { setLoading(false) }
   }
 
@@ -150,9 +150,6 @@ function OtpStep({ email, onVerified, onBack, isDark }) {
           </h3>
           <p className={`${mutedText} text-sm`}>
             OTP sent to <strong className="text-[#2E7D59]">{email}</strong>
-          </p>
-          <p className="text-[#8888AA] text-xs">
-            (Use 123456 for testing)
           </p>
           <form onSubmit={verify} className="flex flex-col gap-3">
             <input

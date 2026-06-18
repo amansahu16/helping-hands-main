@@ -246,12 +246,7 @@ export default function Navbar() {
                 >
                   Login
                 </button>
-                <button
-                  onClick={openReg}
-                  className="px-5 py-2 text-sm font-semibold rounded-full bg-[#13221B] text-white hover:bg-[#2E4237] dark:bg-[#EEF5F1] dark:text-[#0A0F0C] dark:hover:bg-white hover:-translate-y-0.5 transition-all flex items-center gap-1.5 shadow-sm"
-                >
-                  Register <span className="text-xs">↗</span>
-                </button>
+
               </>
             )}
 

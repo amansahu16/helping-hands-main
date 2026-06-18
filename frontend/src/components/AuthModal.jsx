@@ -168,7 +168,6 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
             <div className="text-4xl mb-2">📧</div>
             <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-[#1E1B4B]'}`}>Check Your Email</h3>
             <p className={`text-sm mt-1 ${isDark ? 'text-[#7777AA]' : 'text-[#6366F1]'}`}>Enter the OTP sent to <strong className="text-[#13221B]">{email}</strong></p>
-            <p className={`text-xs mt-1 ${isDark ? 'text-[#555577]' : 'text-[#A5B4FC]'}`}>(Use <strong>123456</strong> for testing)</p>
           </div>
           <form onSubmit={handleVerify} className="flex flex-col gap-3">
             <label htmlFor="otp-input" className="sr-only">Enter 6-digit OTP</label>
@@ -200,7 +199,10 @@ function OtpStep({ email, onVerify, onBack, role, isDark }) {
 
 // ══════════════════════════════════════════════════════════════
 export default function AuthModal({ open, onClose, initialTab = 'login' }) {
-  const { loginUser, loginNgo, loginAdmin, registerUser, registerAdmin } = useAuth()
+  const {
+    loginUser, loginNgo, loginAdmin, registerUser, registerAdmin,
+    forgotPasswordUser, resetPasswordUser, forgotPasswordNgo, resetPasswordNgo, forgotPasswordAdmin, resetPasswordAdmin
+  } = useAuth()
   const { theme } = useTheme()
   const navigate = useNavigate()
   const { getLocation, loading: gpsLoading, error: gpsError } = useGPS()
@@ -219,7 +221,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
   const [form, setForm] = useState({
     name: '', email: '', phone: '', password: '', location: '',
     latitude: null, longitude: null,
-    photo: null, dateOfBirth: '', occupation: '',
+    photo: null, dateOfBirth: '', occupation: '', otp: '',
   })
 
   useEffect(() => {
@@ -227,7 +229,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
       setForm({
         name: '', email: '', phone: '', password: '', location: '',
         latitude: null, longitude: null,
-        photo: null, dateOfBirth: '', occupation: '',
+        photo: null, dateOfBirth: '', occupation: '', otp: '',
       })
       setError('')
       setSuccess('')
@@ -249,7 +251,7 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
   }
 
   const resetForm = () => {
-    setForm({ name: '', email: '', phone: '', password: '', location: '', latitude: null, longitude: null, photo: null, dateOfBirth: '', occupation: '' })
+    setForm({ name: '', email: '', phone: '', password: '', location: '', latitude: null, longitude: null, photo: null, dateOfBirth: '', occupation: '', otp: '' })
     setError(''); setSuccess(''); setStep('form')
   }
 
@@ -356,6 +358,65 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
     }
   }
 
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.email) {
+      setError('Email is required')
+      return
+    }
+    setLoading(true); setError(''); setSuccess('')
+    try {
+      if (role === 'user') {
+        await forgotPasswordUser(form.email)
+      } else if (role === 'ngo') {
+        await forgotPasswordNgo(form.email)
+      } else if (role === 'admin') {
+        await forgotPasswordAdmin(form.email)
+      }
+      setPendingEmail(form.email)
+      setSuccess('If that email exists, a reset OTP has been sent.')
+      setStep('reset')
+      setForm(f => ({ ...f, password: '', otp: '' }))
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to send reset code')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.otp || form.otp.length !== 6) {
+      setError('Please enter the 6-digit OTP.')
+      return
+    }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(form.password)) {
+      setError('Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_.');
+      return;
+    }
+    setLoading(true); setError(''); setSuccess('')
+    try {
+      if (role === 'user') {
+        await resetPasswordUser(pendingEmail, form.otp, form.password)
+      } else if (role === 'ngo') {
+        await resetPasswordNgo(pendingEmail, form.otp, form.password)
+      } else if (role === 'admin') {
+        await resetPasswordAdmin(pendingEmail, form.otp, form.password)
+      }
+      setSuccess('Password reset successfully! Please login.')
+      setTimeout(() => {
+        setStep('form')
+        setTab('login')
+        setForm(f => ({ ...f, password: '', otp: '' }))
+        setSuccess('')
+      }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to reset password')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Styles based on theme
   const modalBg = isDark ? 'bg-[#16163A] border-[#13221B]/25' : 'bg-white border-[#C7D2FE]'
   const overlayBg = isDark ? 'bg-[#07071A]/85' : 'bg-[#1E1B4B]/40'
@@ -384,9 +445,9 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
             <LogoIcon size={32} />
           </div>
           <h2 className={`font-['Poppins'] font-bold text-xl ${headingClass}`}>
-            {step === 'otp' ? 'Verify Email' : tab === 'login' ? 'Welcome Back' : 'Join Helping Hands'}
+            {step === 'otp' ? 'Verify Email' : step === 'forgot' ? 'Forgot Password' : step === 'reset' ? 'Reset Password' : tab === 'login' ? 'Welcome Back' : 'Join Helping Hands'}
           </h2>
-          {step !== 'otp' && (
+          {step !== 'otp' && step !== 'forgot' && step !== 'reset' && (
             <p className={`text-sm mt-1 ${subClass}`}>
               {tab === 'login' ? 'Sign in to your account' : 'Create your free account'}
             </p>
@@ -402,6 +463,142 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
             onBack={() => setStep('form')}
             isDark={isDark}
           />
+        )}
+
+        {/* Forgot Password Step */}
+        {step === 'forgot' && (
+          <div className="flex flex-col gap-4">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🔑</div>
+              <p className={`text-sm ${subClass}`}>
+                Enter your email address to receive a verification code for your <strong>{role === 'user' ? 'User' : role === 'ngo' ? 'NGO' : 'Admin'}</strong> account.
+              </p>
+            </div>
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                <span>⚠</span> {error}
+              </div>
+            )}
+            <form onSubmit={handleForgotSubmit} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="forgot-email" className={labelClass}>Email Address *</label>
+                <input
+                  id="forgot-email"
+                  name="email"
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={change}
+                  placeholder="email@example.com"
+                  className={inputClass}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white hover:shadow-[0_0_28px_rgba(108,99,255,0.4)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending OTP…</> : 'Send Reset OTP'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('form')
+                  setError('')
+                  setSuccess('')
+                }}
+                className={`text-sm hover:underline transition-colors text-center ${isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'}`}
+              >
+                ← Back to Login
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Reset Password Step */}
+        {step === 'reset' && (
+          <div className="flex flex-col gap-4">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🔒</div>
+              <p className={`text-sm ${subClass}`}>
+                Enter the OTP sent to <strong className="text-[#13221B]">{pendingEmail}</strong> and choose a new password.
+              </p>
+            </div>
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                <span>⚠</span> {error}
+              </div>
+            )}
+            {success && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                <CheckCircle size={15} /> {success}
+              </div>
+            )}
+            <form onSubmit={handleResetSubmit} className="flex flex-col gap-3">
+              {/* OTP Input */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reset-otp" className={labelClass}>6-Digit OTP *</label>
+                <input
+                  id="reset-otp"
+                  name="otp"
+                  required
+                  placeholder="Enter 6-digit OTP"
+                  value={form.otp || ''}
+                  onChange={(e) => setForm(f => ({ ...f, otp: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+                  className={`w-full px-4 py-3 rounded-xl border text-center text-xl font-bold tracking-widest focus:outline-none focus:ring-2 transition-all ${isDark ? 'bg-white/[0.04] border-white/10 text-white focus:border-[#13221B] focus:ring-[#13221B]/20' : 'bg-[#EEF2FF] border-[#C7D2FE] text-[#1E1B4B] focus:border-[#13221B] focus:ring-[#13221B]/20'}`}
+                  maxLength={6}
+                />
+              </div>
+
+              {/* New Password Input */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reset-new-password" className={labelClass}>New Password *</label>
+                <div className="relative">
+                  <input
+                    id="reset-new-password"
+                    name="password"
+                    type={showPw ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    maxLength={16}
+                    value={form.password}
+                    onChange={change}
+                    placeholder="Create a strong password"
+                    className={`${inputClass} pr-11`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(s => !s)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-[#555577] hover:text-[#2E7D59]' : 'text-[#A5B4FC] hover:text-[#13221B]'}`}
+                  >
+                    {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white hover:shadow-[0_0_28px_rgba(108,99,255,0.4)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Resetting Password…</> : 'Reset Password'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('form')
+                  setError('')
+                  setSuccess('')
+                }}
+                className={`text-sm hover:underline transition-colors text-center ${isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'}`}
+              >
+                ← Back to Login
+              </button>
+            </form>
+          </div>
         )}
 
         {/* Auth Form */}
@@ -511,7 +708,22 @@ export default function AuthModal({ open, onClose, initialTab = 'login' }) {
 
                 {/* ── PASSWORD ─────────────────────────────── */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="password-input" className={labelClass}>Password *</label>
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="password-input" className={labelClass}>Password *</label>
+                    {tab === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep('forgot')
+                          setError('')
+                          setSuccess('')
+                        }}
+                        className={`text-xs hover:underline ${isDark ? 'text-[#7777AA] hover:text-white' : 'text-[#6366F1] hover:text-[#13221B]'}`}
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <input id="password-input" name="password" type={showPw ? 'text' : 'password'} autoComplete={tab === 'login' ? 'current-password' : 'new-password'} value={form.password} onChange={change}
                       required minLength={8} maxLength={16} placeholder="Create a strong password" className={`${inputClass} pr-11`} />

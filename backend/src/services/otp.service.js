@@ -1,11 +1,18 @@
-
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 // In-memory OTP storage
 const otpStore = new Map();
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize NodeMailer SMTP Transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587", 10),
+  secure: process.env.SMTP_SECURE === "true", // usually false for port 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 // Send Admin Login OTP
 export const sendAdminLoginOtp = async (email) => {
@@ -16,57 +23,46 @@ export const sendAdminLoginOtp = async (email) => {
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 min
   });
 
-  console.log(`[OTP SERVICE] Generated OTP for ${email}`);
+  console.log(`[OTP SERVICE] Generated OTP "${otp}" for Admin: ${email}`);
 
-  try {
-    const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: email,
-      subject: "Helping Hands Admin Portal Login Verification Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
-          <h2>Helping Hands Admin Portal</h2>
-
-          <p>Hello Admin,</p>
-
-          <p>Please use the following verification code to complete your login:</p>
-
-          <div style="
-            font-size:32px;
-            font-weight:bold;
-            text-align:center;
-            letter-spacing:5px;
-            padding:20px;
-            background:#f5f5f5;
-            border-radius:8px;
-          ">
-            ${otp}
-          </div>
-
-          <p>This code is valid for 10 minutes.</p>
+  // Send email in the background without awaiting
+  transporter.sendMail({
+    from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
+    to: email,
+    subject: "Helping Hands Admin Portal Login Verification Code",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
+        <h2>Helping Hands Admin Portal</h2>
+        <p>Hello Admin,</p>
+        <p>Please use the following verification code to complete your login:</p>
+        <div style="
+          font-size:32px;
+          font-weight:bold;
+          text-align:center;
+          letter-spacing:5px;
+          padding:20px;
+          background:#f5f5f5;
+          border-radius:8px;
+        ">
+          ${otp}
         </div>
-      `,
-    });
-
-    if (error) {
-      console.error("❌ Resend Error:", error);
-    } else {
-      console.log("✅ Email sent successfully");
-      console.log(data);
-    }
-  } catch (error) {
-    console.error("❌ Failed to send email");
-    console.error(error);
-
-    console.log(`[OTP SERVICE] FALLBACK OTP: ${otp}`);
-  }
+        <p>This code is valid for 10 minutes.</p>
+      </div>
+    `,
+  })
+  .then(() => {
+    console.log("✅ Admin Login OTP Email sent successfully via SMTP");
+  })
+  .catch((error) => {
+    console.error("❌ Failed to send Admin Login OTP Email via SMTP:", error.message);
+  });
 
   return otp;
 };
 
-// Generic OTP sender (for testing)
+// Generic OTP sender using NodeMailer SMTP
 export const sendOtp = async (email, purpose = "verification") => {
-  const otp = "123456";
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
   otpStore.set(email, {
     otp,
@@ -74,10 +70,54 @@ export const sendOtp = async (email, purpose = "verification") => {
   });
 
   console.log(
-    `[OTP SERVICE] Sent OTP "${otp}" to ${email} for ${purpose}`
+    `[OTP SERVICE] Generated OTP "${otp}" for ${email} for ${purpose}`
   );
 
-  return true;
+  const subject = purpose === "reset" 
+    ? "Helping Hands - Reset Password Verification Code"
+    : "Helping Hands - Email Verification Code";
+    
+  const title = purpose === "reset"
+    ? "Reset Your Password"
+    : "Verify Your Email";
+
+  const message = purpose === "reset"
+    ? "Please use the following verification code to reset your password:"
+    : "Thank you for joining Helping Hands. Please use the following verification code to complete your verification:";
+
+  // Send email in the background without awaiting
+  transporter.sendMail({
+    from: `"Helping Hands" <${process.env.SMTP_USER || "no-reply@helpinghands.org"}>`,
+    to: email,
+    subject: subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
+        <h2>Helping Hands</h2>
+        <h3>${title}</h3>
+        <p>${message}</p>
+        <div style="
+          font-size:32px;
+          font-weight:bold;
+          text-align:center;
+          letter-spacing:5px;
+          padding:20px;
+          background:#f5f5f5;
+          border-radius:8px;
+        ">
+          ${otp}
+        </div>
+        <p>This code is valid for 10 minutes.</p>
+      </div>
+    `,
+  })
+  .then(() => {
+    console.log(`✅ ${purpose.toUpperCase()} OTP Email sent successfully via SMTP`);
+  })
+  .catch((error) => {
+    console.error(`❌ Failed to send ${purpose.toUpperCase()} OTP Email via SMTP:`, error.message);
+  });
+
+  return otp;
 };
 
 // Verify OTP
@@ -108,4 +148,3 @@ export const verifyOtp = async (email, otp) => {
 
   return true;
 };
-

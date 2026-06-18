@@ -15,6 +15,8 @@ const requireAdmin = (req, res, next) => {
 // Public Admin Auth
 router.post("/login",            adminController.loginAdmin);
 router.post("/verify-login-otp", adminController.verifyLoginOtp);
+router.post("/forgot-password",  adminController.forgotAdminPassword);
+router.post("/reset-password",   adminController.resetAdminPassword);
 
 // Secure Admin Registration (Only existing admins can create new admins)
 router.post("/register",         requireAuth, requireAdmin, adminController.registerAdmin);

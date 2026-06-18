@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import pool, { mapRowKeys, mapRows } from "../config/db.js";
-import { sendAdminLoginOtp, verifyOtp } from "../services/otp.service.js";
+import { sendAdminLoginOtp, verifyOtp, sendOtp } from "../services/otp.service.js";
 
 // Helper functions for JWT
 function signToken(payload) {
@@ -117,6 +117,43 @@ async function verifyLoginOtp(req, res) {
   } catch (err) {
     console.error("verifyLoginOtp error:", err);
     return res.status(500).json({ message: "OTP verification failed", error: err.message });
+  }
+}
+
+async function forgotAdminPassword(req, res) {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    const { rows } = await pool.query("SELECT * FROM admins WHERE email = $1", [email]);
+    const admin = rows[0] ? mapRowKeys(rows[0]) : null;
+    if (admin) {
+      await sendOtp(email, "reset");
+    }
+    return res.json({ message: "If that email exists, a reset OTP has been sent." });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function resetAdminPassword(req, res) {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, OTP and new password are required" });
+    }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(newPassword)) {
+      return res.status(400).json({ message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*__." });
+    }
+    const valid = await verifyOtp(email, otp);
+    if (!valid) return res.status(400).json({ message: "Invalid or expired OTP" });
+
+    const passwordHash = await hashPassword(newPassword);
+    await pool.query("UPDATE admins SET password_hash = $1 WHERE email = $2", [passwordHash, email]);
+    return res.json({ message: "Password reset successfully" });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 }
 
@@ -502,6 +539,8 @@ export const adminController = {
   registerAdmin,
   loginAdmin,
   verifyLoginOtp,
+  forgotAdminPassword,
+  resetAdminPassword,
   getStats,
   listNgos,
   verifyNgo,
