@@ -5,17 +5,21 @@ import dns from "dns";
 const otpStore = new Map();
 
 // Initialize NodeMailer SMTP Transporter
+// Initialize NodeMailer SMTP Transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  host: '74.125.130.108', // Google SMTP IPv4
   port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_SECURE === "true", // usually false for port 587
+  secure: process.env.SMTP_SECURE === "true",
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  family: 4, // Kuch Nodemailer versions mein direct family: 4 kaam karta hai
+  family: 4,
   dns: {
-    family: 4 // Baaki versions ke liye DNS level par IPv4 force karta hai
+    family: 4
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
