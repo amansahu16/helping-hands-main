@@ -12,6 +12,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  family: 4, // Force connection over IPv4 to prevent IPv6 routing issues (ENETUNREACH)
 });
 
 // Send Admin Login OTP
