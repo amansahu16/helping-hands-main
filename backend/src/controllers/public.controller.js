@@ -1,17 +1,23 @@
 //  PUBLIC / MISC — controllers/public.controller.js
 // ============================================================
-import { prisma } from "../lib/prisma.js";
+import pool, { mapRowKeys, mapRows } from "../config/db.js";
+import crypto from "crypto";
 
 // ── FAQs ─────────────────────────────────────────────────────
 
 async function listFaqs(req, res) {
   try {
     const { category } = req.query;
-    const faqs = await prisma.faq.findMany({
-      where: category ? { category: { contains: category, mode: "insensitive" } } : {},
-      orderBy: { category: "asc" },
-    });
-    return res.json(faqs);
+    let queryText = "SELECT * FROM faqs";
+    const params = [];
+    if (category) {
+      queryText += " WHERE category ILIKE $1";
+      params.push(`%${category}%`);
+    }
+    queryText += " ORDER BY category ASC";
+
+    const { rows } = await pool.query(queryText, params);
+    return res.json(mapRows(rows));
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -21,11 +27,18 @@ async function listFaqs(req, res) {
 
 async function listTestimonials(req, res) {
   try {
-    const testimonials = await prisma.testimonial.findMany({
-      include: { user: { select: { id: true, name: true, photoUrl: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
+    const { rows } = await pool.query(`
+      SELECT t.*, u.name AS "user_name", u.photo_url AS "user_photoUrl"
+      FROM testimonials t
+      LEFT JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at DESC
+      LIMIT 50
+    `);
+    const testimonials = mapRows(rows).map(row => ({
+      ...row,
+      user: row.userId ? { id: row.userId, name: row.userName, photoUrl: row.userPhotoUrl } : null
+    }));
+
     return res.json(testimonials);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -40,9 +53,13 @@ async function createTestimonial(req, res) {
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
     }
 
-    const testimonial = await prisma.testimonial.create({
-      data: { userId: req.user.id, content, rating },
-    });
+    const id = crypto.randomUUID();
+    const { rows } = await pool.query(
+      "INSERT INTO testimonials (id, user_id, content, rating, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *",
+      [id, req.user.id, content, rating]
+    );
+
+    const testimonial = mapRowKeys(rows[0]);
     return res.status(201).json(testimonial);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -56,12 +73,21 @@ async function subscribeNewsletter(req, res) {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
 
-    const subscription = await prisma.newsletter.upsert({
-      where: { email },
-      update: {},                        // already subscribed — idempotent
-      create: { email },
-    });
-    return res.status(201).json({ message: "Subscribed successfully", id: subscription.id });
+    const check = await pool.query("SELECT id FROM newsletters WHERE email = $1", [email]);
+    let subscriptionId;
+
+    if (check.rows.length > 0) {
+      subscriptionId = check.rows[0].id;
+    } else {
+      const id = crypto.randomUUID();
+      const insert = await pool.query(
+        "INSERT INTO newsletters (id, email, subscribed_at) VALUES ($1, $2, NOW()) RETURNING id",
+        [id, email]
+      );
+      subscriptionId = insert.rows[0].id;
+    }
+
+    return res.status(201).json({ message: "Subscribed successfully", id: subscriptionId });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -70,7 +96,7 @@ async function subscribeNewsletter(req, res) {
 async function unsubscribeNewsletter(req, res) {
   try {
     const { email } = req.body;
-    await prisma.newsletter.deleteMany({ where: { email } });
+    await pool.query("DELETE FROM newsletters WHERE email = $1", [email]);
     return res.json({ message: "Unsubscribed successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -87,12 +113,13 @@ async function sendContactMessage(req, res) {
       return res.status(400).json({ message: "Name, email, and message are required" });
     }
 
-    const contact = await prisma.contactMessage.create({
-      data: { name, email, phone, message },
-    });
+    const id = crypto.randomUUID();
+    const { rows } = await pool.query(
+      "INSERT INTO contact_messages (id, name, email, phone, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id",
+      [id, name, email, phone || null, message]
+    );
 
-    // Optionally: trigger an email notification to admin here
-    return res.status(201).json({ message: "Message received. We'll get back to you soon.", id: contact.id });
+    return res.status(201).json({ message: "Message received. We'll get back to you soon.", id: rows[0].id });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -103,11 +130,16 @@ async function sendContactMessage(req, res) {
 async function listLocations(req, res) {
   try {
     const { type } = req.query;
-    const locations = await prisma.location.findMany({
-      where: type ? { type } : {},
-      orderBy: { name: "asc" },
-    });
-    return res.json(locations);
+    let queryText = "SELECT * FROM locations";
+    const params = [];
+    if (type) {
+      queryText += " WHERE type = $1";
+      params.push(type);
+    }
+    queryText += " ORDER BY name ASC";
+
+    const { rows } = await pool.query(queryText, params);
+    return res.json(mapRows(rows));
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -115,7 +147,8 @@ async function listLocations(req, res) {
 
 async function getLocationById(req, res) {
   try {
-    const location = await prisma.location.findUnique({ where: { id: req.params.id } });
+    const { rows } = await pool.query("SELECT * FROM locations WHERE id = $1", [req.params.id]);
+    const location = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!location) return res.status(404).json({ message: "Location not found" });
     return res.json(location);
   } catch (err) {
@@ -125,11 +158,20 @@ async function getLocationById(req, res) {
 
 async function getStats(req, res) {
   try {
+    const queryHelper = async (queryText, params = []) => {
+      try {
+        const res = await pool.query(queryText, params);
+        return parseInt(res.rows[0].count, 10);
+      } catch {
+        return 0;
+      }
+    };
+
     const [donationsCount, animalsCount, ngosCount, volunteersCount] = await Promise.all([
-      prisma.donation.count().catch(() => 0),
-      prisma.rescueRequest.count({ where: { status: "RESOLVED" } }).catch(() => 0),
-      prisma.ngo.count().catch(() => 0),
-      prisma.user.count().catch(() => 0)
+      queryHelper("SELECT COUNT(*)::int AS count FROM donations"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status = 'RESOLVED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM ngos"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM users")
     ]);
 
     return res.json({
@@ -157,36 +199,32 @@ async function getStats(req, res) {
 
 async function getLeaderboard(req, res) {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        photoUrl: true,
-        _count: {
-          select: {
-            campaignsOrganized: true,
-            campaignsJoined: true,
-            donations: true,
-            rescueRequests: true,
-            adoptions: true,
-          }
-        }
-      }
-    });
+    const { rows } = await pool.query(`
+      SELECT 
+        u.id, 
+        u.name, 
+        u.photo_url,
+        (SELECT COUNT(*)::int FROM campaigns WHERE organizer_user_id = u.id) AS "campaignsOrganized",
+        (SELECT COUNT(*)::int FROM campaign_participants WHERE user_id = u.id) AS "campaignsJoined",
+        (SELECT COUNT(*)::int FROM donations WHERE donor_id = u.id) AS "donationsCount",
+        (SELECT COUNT(*)::int FROM rescue_requests WHERE reporter_id = u.id) AS "rescueRequestsCount",
+        (SELECT COUNT(*)::int FROM adoptions WHERE adopter_id = u.id) AS "adoptionsCount"
+      FROM users u
+    `);
 
-    const leaderboard = users.map(user => {
-      const organized = user._count.campaignsOrganized || 0;
-      const joined = user._count.campaignsJoined || 0;
-      const donations = user._count.donations || 0;
-      const rescues = user._count.rescueRequests || 0;
-      const adoptions = user._count.adoptions || 0;
+    const leaderboard = rows.map(user => {
+      const organized = user.campaignsOrganized || 0;
+      const joined = user.campaignsJoined || 0;
+      const donations = user.donationsCount || 0;
+      const rescues = user.rescueRequestsCount || 0;
+      const adoptions = user.adoptionsCount || 0;
 
       const points = (organized * 10) + (joined * 5) + (donations * 5) + (rescues * 8) + (adoptions * 10);
 
       return {
         id: user.id,
         name: user.name,
-        photoUrl: user.photoUrl,
+        photoUrl: user.photo_url,
         points
       };
     })
@@ -201,11 +239,20 @@ async function getLeaderboard(req, res) {
 
 async function getAnimalStats(req, res) {
   try {
+    const queryHelper = async (queryText, params = []) => {
+      try {
+        const res = await pool.query(queryText, params);
+        return parseInt(res.rows[0].count, 10);
+      } catch {
+        return 0;
+      }
+    };
+
     const [rescued, adopted, fed, shelters] = await Promise.all([
-      prisma.rescueRequest.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }).catch(() => 0),
-      prisma.adoption.count({ where: { status: "COMPLETED" } }).catch(() => 0),
-      prisma.campaign.count({ where: { type: "ANIMAL_WELFARE", status: "COMPLETED" } }).catch(() => 0),
-      prisma.ngo.count({ where: { areaOfWork: "Animal Welfare" } }).catch(() => 0)
+      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status IN ('RESOLVED', 'CLOSED')"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM adoptions WHERE status = 'COMPLETED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE type = 'ANIMAL_WELFARE' AND status = 'COMPLETED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM ngos WHERE area_of_work = 'Animal Welfare'")
     ]);
 
     return res.json({

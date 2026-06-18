@@ -1,25 +1,68 @@
 //  ANIMALS — controllers/animal.controller.js
 // ============================================================
-import { prisma } from "../lib/prisma.js";
+import pool, { mapRowKeys, mapRows } from "../config/db.js";
+import crypto from "crypto";
 import { uploadMultipleImages } from "../utils/cloudinary.js";
  
 async function listAnimals(req, res) {
   try {
     const { status, category, location, page = 1, limit = 12 } = req.query;
-    const animals = await prisma.animal.findMany({
-      where: {
-        status: status ? status : { not: "ADOPTED" },
-        ...(category && { category: { contains: category, mode: "insensitive" } }),
-        ...(location && { location: { contains: location, mode: "insensitive" } }),
-      },
-      include: {
-        postedByUser: { select: { id: true, name: true } },
-        postedByNgo:  { select: { id: true, name: true, photoUrl: true, phoneNumber: true, email: true } },
-      },
-      skip: (page - 1) * limit,
-      take: Number(limit),
-      orderBy: { createdAt: "desc" },
+    const offset = (Number(page) - 1) * Number(limit);
+    const params = [];
+    let paramIndex = 1;
+    
+    let queryText = `
+      SELECT a.*, 
+             u.name AS "user_name", 
+             n.name AS "ngo_name", n.photo_url AS "ngo_photo_url", n.phone_number AS "ngo_phone_number", n.email AS "ngo_email"
+      FROM animals a
+      LEFT JOIN users u ON a.posted_by_user_id = u.id
+      LEFT JOIN ngos n ON a.posted_by_ngo_id = n.id
+      WHERE 1=1
+    `;
+
+    if (status) {
+      queryText += ` AND a.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    } else {
+      queryText += ` AND a.status != $${paramIndex}`;
+      params.push("ADOPTED");
+      paramIndex++;
+    }
+
+    if (category) {
+      queryText += ` AND a.category ILIKE $${paramIndex}`;
+      params.push(`%${category}%`);
+      paramIndex++;
+    }
+
+    if (location) {
+      queryText += ` AND a.location ILIKE $${paramIndex}`;
+      params.push(`%${location}%`);
+      paramIndex++;
+    }
+
+    queryText += ` ORDER BY a.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(Number(limit), offset);
+
+    const { rows } = await pool.query(queryText, params);
+    
+    const animals = rows.map((row) => {
+      const camel = mapRowKeys(row);
+      return {
+        ...camel,
+        postedByUser: row.posted_by_user_id ? { id: row.posted_by_user_id, name: row.user_name } : null,
+        postedByNgo: row.posted_by_ngo_id ? {
+          id: row.posted_by_ngo_id,
+          name: row.ngo_name,
+          photoUrl: row.ngo_photo_url,
+          phoneNumber: row.ngo_phone_number,
+          email: row.ngo_email,
+        } : null,
+      };
     });
+
     return res.json(animals);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -28,15 +71,29 @@ async function listAnimals(req, res) {
  
 async function getAnimalById(req, res) {
   try {
-    const animal = await prisma.animal.findUnique({
-      where: { id: req.params.id },
-      include: {
-        postedByUser: { select: { id: true, name: true, photoUrl: true } },
-        postedByNgo:  { select: { id: true, name: true, photoUrl: true } },
-        adoptions:    { select: { status: true, adoptedAt: true } },
-      },
-    });
-    if (!animal) return res.status(404).json({ message: "Animal not found" });
+    const { rows } = await pool.query("SELECT * FROM animals WHERE id = $1", [req.params.id]);
+    const animalRaw = rows[0];
+    if (!animalRaw) return res.status(404).json({ message: "Animal not found" });
+
+    const animal = mapRowKeys(animalRaw);
+
+    if (animal.postedByUserId) {
+      const { rows: uRows } = await pool.query("SELECT id, name, photo_url FROM users WHERE id = $1", [animal.postedByUserId]);
+      animal.postedByUser = uRows[0] ? mapRowKeys(uRows[0]) : null;
+    } else {
+      animal.postedByUser = null;
+    }
+
+    if (animal.postedByNgoId) {
+      const { rows: nRows } = await pool.query("SELECT id, name, photo_url FROM ngos WHERE id = $1", [animal.postedByNgoId]);
+      animal.postedByNgo = nRows[0] ? mapRowKeys(nRows[0]) : null;
+    } else {
+      animal.postedByNgo = null;
+    }
+
+    const { rows: adoptRows } = await pool.query("SELECT status, adopted_at AS \"adoptedAt\" FROM adoptions WHERE animal_id = $1", [animal.id]);
+    animal.adoptions = mapRows(adoptRows);
+
     return res.json(animal);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -50,17 +107,33 @@ async function createAnimal(req, res) {
  
     const uploadedPhotos = Array.isArray(photos) ? await uploadMultipleImages(photos) : [];
 
-    const animal = await prisma.animal.create({
-      data: {
-        category, name: name || null, age: age || null,
-        location, description,
-        latitude:  latitude  ? Number(latitude)  : null,
-        longitude: longitude ? Number(longitude) : null,
-        photos: uploadedPhotos,
-        ...(role === "user" && { postedByUserId: posterId }),
-        ...(role === "ngo"  && { postedByNgoId:  posterId }),
-      },
-    });
+    const id = crypto.randomUUID();
+    const lat = latitude ? parseFloat(latitude) : null;
+    const lon = longitude ? parseFloat(longitude) : null;
+    const postedByUserId = role === "user" ? posterId : null;
+    const postedByNgoId = role === "ngo" ? posterId : null;
+
+    const { rows } = await pool.query(
+      `INSERT INTO animals (
+        id, category, name, age, location, description, latitude, longitude, photos,
+        posted_by_user_id, posted_by_ngo_id, status, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'AVAILABLE', NOW()) RETURNING *`,
+      [
+        id,
+        category || null,
+        name || null,
+        age || null,
+        location || null,
+        description || null,
+        lat,
+        lon,
+        uploadedPhotos,
+        postedByUserId,
+        postedByNgoId,
+      ]
+    );
+
+    const animal = mapRowKeys(rows[0]);
     return res.status(201).json(animal);
   } catch (err) {
     console.error("createAnimal error:", err);
@@ -70,7 +143,8 @@ async function createAnimal(req, res) {
  
 async function updateAnimal(req, res) {
   try {
-    const animal = await prisma.animal.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM animals WHERE id = $1", [req.params.id]);
+    const animal = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!animal) return res.status(404).json({ message: "Animal not found" });
  
     const { id, role } = req.user;
@@ -82,10 +156,45 @@ async function updateAnimal(req, res) {
     const { category, location, description, photos, status } = req.body;
     const uploadedPhotos = Array.isArray(photos) ? await uploadMultipleImages(photos) : undefined;
 
-    const updated = await prisma.animal.update({
-      where: { id: req.params.id },
-      data: { category, location, description, photos: uploadedPhotos, status },
-    });
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (category !== undefined) {
+      updates.push(`category = $${paramIndex}`);
+      params.push(category);
+      paramIndex++;
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramIndex}`);
+      params.push(location);
+      paramIndex++;
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIndex}`);
+      params.push(description);
+      paramIndex++;
+    }
+    if (uploadedPhotos !== undefined) {
+      updates.push(`photos = $${paramIndex}`);
+      params.push(uploadedPhotos);
+      paramIndex++;
+    }
+    if (status !== undefined) {
+      updates.push(`status = $${paramIndex}`);
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return res.json(animal);
+    }
+
+    params.push(req.params.id);
+    const query = `UPDATE animals SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+    const { rows: updateRows } = await pool.query(query, params);
+    const updated = mapRowKeys(updateRows[0]);
+
     return res.json(updated);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -94,7 +203,8 @@ async function updateAnimal(req, res) {
  
 async function deleteAnimal(req, res) {
   try {
-    const animal = await prisma.animal.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM animals WHERE id = $1", [req.params.id]);
+    const animal = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!animal) return res.status(404).json({ message: "Animal not found" });
  
     const { id, role } = req.user;
@@ -103,7 +213,7 @@ async function deleteAnimal(req, res) {
       (role === "ngo"  && animal.postedByNgoId  === id);
     if (!isOwner) return res.status(403).json({ message: "Forbidden" });
  
-    await prisma.animal.delete({ where: { id: req.params.id } });
+    await pool.query("DELETE FROM animals WHERE id = $1", [req.params.id]);
     return res.json({ message: "Animal listing deleted" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -112,26 +222,35 @@ async function deleteAnimal(req, res) {
  
 async function initiateAdoption(req, res) {
   try {
-    const animal = await prisma.animal.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM animals WHERE id = $1", [req.params.id]);
+    const animal = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!animal) return res.status(404).json({ message: "Animal not found" });
     if (animal.status !== "AVAILABLE") {
       return res.status(409).json({ message: "Animal is not available for adoption" });
     }
  
-    const adoption = await prisma.$transaction(async (tx) => {
-      const a = await tx.adoption.create({
-        data: {
-          animalId:  animal.id,
-          adopterId: req.user.id,
-          ngoId:     animal.postedByNgoId ?? null,
-          status:    "IN_PROGRESS",
-        },
-      });
-      await tx.animal.update({ where: { id: animal.id }, data: { status: "ADOPTED" } });
-      return a;
-    });
- 
-    return res.status(201).json(adoption);
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      
+      const adoptionId = crypto.randomUUID();
+      const insertRes = await client.query(
+        `INSERT INTO adoptions (id, animal_id, adopter_id, ngo_id, status, created_at)
+         VALUES ($1, $2, $3, $4, 'IN_PROGRESS', NOW()) RETURNING *`,
+        [adoptionId, animal.id, req.user.id, animal.postedByNgoId ?? null]
+      );
+
+      await client.query("UPDATE animals SET status = 'ADOPTED' WHERE id = $1", [animal.id]);
+      
+      await client.query("COMMIT");
+      const adoption = mapRowKeys(insertRes.rows[0]);
+      return res.status(201).json(adoption);
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

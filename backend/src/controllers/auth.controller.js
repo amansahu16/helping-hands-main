@@ -3,14 +3,15 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import fs from "fs";
-import { prisma } from "../lib/prisma.js";
+import crypto from "crypto";
+import pool, { mapRowKeys } from "../config/db.js";
 import { sendOtp, verifyOtp } from "../services/otp.service.js";
 import { uploadOnCloudinary, uploadSingleImage } from "../utils/cloudinary.js";
 
 // ── helpers ─────────────────────────────────────────────────
 
 function signToken(payload) {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, process.env.JWT_SECRET || "fallback_secret", { expiresIn: "7d" });
 }
 
 function hashPassword(plain) {
@@ -40,7 +41,7 @@ async function registerUser(req, res) {
 
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(password)) {
       return res.status(400).json({ 
-        message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_." 
+        message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*__." 
       });
     }
 
@@ -48,10 +49,12 @@ async function registerUser(req, res) {
       return res.status(400).json({ message: "Password cannot be the same as your email" });
     }
 
-    const userExists = await prisma.user.findUnique({ where: { email } });
-    const ngoExists = await prisma.ngo.findUnique({ where: { email } });
-    const adminExists = await prisma.admin.findUnique({ where: { email } });
-    if (userExists || ngoExists || adminExists) {
+    // Check if email already exists
+    const userExists = await pool.query("SELECT 1 FROM users WHERE email = $1", [email]);
+    const ngoExists = await pool.query("SELECT 1 FROM ngos WHERE email = $1", [email]);
+    const adminExists = await pool.query("SELECT 1 FROM admins WHERE email = $1", [email]);
+    
+    if (userExists.rows.length > 0 || ngoExists.rows.length > 0 || adminExists.rows.length > 0) {
       return res.status(409).json({ message: "Email already registered" });
     }
 
@@ -60,21 +63,35 @@ async function registerUser(req, res) {
     // Store profile photo to Cloudinary
     const photoUrl = photoBase64 ? await uploadSingleImage(photoBase64) : null;
 
-    const user = await prisma.user.create({
-      data: {
+    const id = crypto.randomUUID();
+    const dob = dateOfBirth ? new Date(dateOfBirth) : null;
+    const lat = latitude ? parseFloat(latitude) : null;
+    const lon = longitude ? parseFloat(longitude) : null;
+
+    const insertRes = await pool.query(
+      `INSERT INTO users (
+        id, name, email, password_hash, phone_number, location, 
+        latitude, longitude, photo_url, date_of_birth, occupation, 
+        otp_verified, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) 
+      RETURNING *`,
+      [
+        id,
         name,
         email,
         passwordHash,
-        phoneNumber: phoneNumber || null,
-        location: location || null,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
+        phoneNumber || null,
+        location || null,
+        lat,
+        lon,
         photoUrl,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        occupation: occupation || null,
-        otpVerified: true, // Auto-verify for dev (change to false in prod with real email)
-      },
-    });
+        dob,
+        occupation || null,
+        true // Auto-verify for dev
+      ]
+    );
+
+    const user = mapRowKeys(insertRes.rows[0]);
 
     // Still send OTP for UX (in dev it logs to console with code 123456)
     try { await sendOtp(email); } catch { }
@@ -100,9 +117,11 @@ async function loginUser(req, res) {
     let user = null;
 
     if (email) {
-      user = await prisma.user.findUnique({ where: { email } });
+      const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+      user = rows[0] ? mapRowKeys(rows[0]) : null;
     } else {
-      user = await prisma.user.findFirst({ where: { phoneNumber: phone } });
+      const { rows } = await pool.query("SELECT * FROM users WHERE phone_number = $1", [phone]);
+      user = rows[0] ? mapRowKeys(rows[0]) : null;
     }
 
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -137,7 +156,7 @@ async function verifyUserOtp(req, res) {
     const valid = await verifyOtp(email, otp);
     if (!valid) return res.status(400).json({ message: "Invalid or expired OTP. (Use 123456 for testing)" });
 
-    await prisma.user.update({ where: { email }, data: { otpVerified: true } });
+    await pool.query("UPDATE users SET otp_verified = true WHERE email = $1", [email]);
     return res.json({ message: "Email verified successfully" });
   } catch (err) {
     return res.status(500).json({ message: "OTP verification failed", error: err.message });
@@ -147,7 +166,8 @@ async function verifyUserOtp(req, res) {
 async function resendUserOtp(req, res) {
   try {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!user) return res.status(404).json({ message: "User not found" });
     await sendOtp(email);
     return res.json({ message: "OTP resent" });
@@ -158,7 +178,8 @@ async function resendUserOtp(req, res) {
 
 async function forgotUserPassword(req, res) {
   const { email } = req.body;
-  const user = await prisma.user.findUnique({ where: { email } });
+  const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+  const user = rows[0] ? mapRowKeys(rows[0]) : null;
   if (user) await sendOtp(email, "reset");
   return res.json({ message: "If that email exists, a reset OTP has been sent." });
 }
@@ -170,7 +191,7 @@ async function resetUserPassword(req, res) {
     if (!valid) return res.status(400).json({ message: "Invalid or expired OTP" });
 
     const passwordHash = await hashPassword(newPassword);
-    await prisma.user.update({ where: { email }, data: { passwordHash } });
+    await pool.query("UPDATE users SET password_hash = $1 WHERE email = $2", [passwordHash, email]);
     return res.json({ message: "Password reset successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -198,7 +219,7 @@ async function registerNgo(req, res) {
 
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(password)) {
       return res.status(400).json({ 
-        message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*_." 
+        message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*__." 
       });
     }
 
@@ -206,16 +227,16 @@ async function registerNgo(req, res) {
       return res.status(400).json({ message: "Password cannot be the same as your email" });
     }
 
-    const userExists = await prisma.user.findUnique({ where: { email } });
-    const ngoExists = await prisma.ngo.findUnique({ where: { email } });
-    const adminExists = await prisma.admin.findUnique({ where: { email } });
-    if (userExists || ngoExists || adminExists) {
+    const userExists = await pool.query("SELECT 1 FROM users WHERE email = $1", [email]);
+    const ngoExists = await pool.query("SELECT 1 FROM ngos WHERE email = $1", [email]);
+    const adminExists = await pool.query("SELECT 1 FROM admins WHERE email = $1", [email]);
+    if (userExists.rows.length > 0 || ngoExists.rows.length > 0 || adminExists.rows.length > 0) {
       return res.status(409).json({ message: "Email already registered" });
     }
 
     if (registrationNumber) {
-      const regExists = await prisma.ngo.findUnique({ where: { registrationNumber } });
-      if (regExists) return res.status(409).json({ message: "Registration number already exists" });
+      const regExists = await pool.query("SELECT 1 FROM ngos WHERE registration_number = $1", [registrationNumber]);
+      if (regExists.rows.length > 0) return res.status(409).json({ message: "Registration number already exists" });
     }
 
     const passwordHash = await hashPassword(password);
@@ -223,24 +244,37 @@ async function registerNgo(req, res) {
     const photoUrl = photoBase64 ? await uploadSingleImage(photoBase64) : null;
     const finalCertificateUrl = certificateBase64 ? await uploadSingleImage(certificateBase64) : (certificateUrl || null);
 
-    const ngo = await prisma.ngo.create({
-      data: {
+    const id = crypto.randomUUID();
+    const lat = latitude ? parseFloat(latitude) : null;
+    const lon = longitude ? parseFloat(longitude) : null;
+
+    const insertRes = await pool.query(
+      `INSERT INTO ngos (
+        id, name, email, password_hash, phone_number, registration_number,
+        location, latitude, longitude, photo_url, certificate_url,
+        area_of_work, description, otp_verified, verified, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+      RETURNING *`,
+      [
+        id,
         name,
         email,
         passwordHash,
-        phoneNumber: phoneNumber || null,
+        phoneNumber || null,
         registrationNumber,
-        location: location || null,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
+        location || null,
+        lat,
+        lon,
         photoUrl,
-        certificateUrl: finalCertificateUrl,
-        areaOfWork: areaOfWork || null,
-        description: description || null,
-        otpVerified: true,  // Auto-verify for dev
-        verified: false,     // Pending admin approval
-      },
-    });
+        finalCertificateUrl,
+        areaOfWork || null,
+        description || null,
+        true,  // Auto-verify for dev
+        false  // Pending admin approval
+      ]
+    );
+
+    const ngo = mapRowKeys(insertRes.rows[0]);
 
     try { await sendOtp(email); } catch { }
 
@@ -256,13 +290,15 @@ async function registerNgo(req, res) {
 
 async function loginNgo(req, res) {
   try {
-    const { email, password, registrationNumber } = req.body;
+    const { email, password } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const ngo = await prisma.ngo.findUnique({ where: { email } });
+    const { rows } = await pool.query("SELECT * FROM ngos WHERE email = $1", [email]);
+    const ngo = rows[0] ? mapRowKeys(rows[0]) : null;
+
     if (!ngo) return res.status(401).json({ message: "Invalid credentials" });
 
     // Allow login even if not otpVerified (auto-verified in dev)
@@ -302,17 +338,18 @@ async function verifyNgoOtp(req, res) {
     const valid = await verifyOtp(email, otp);
     if (!valid) return res.status(400).json({ message: "Invalid or expired OTP. (Use 123456 for testing)" });
 
-    await prisma.ngo.update({ where: { email }, data: { otpVerified: true } });
+    await pool.query("UPDATE ngos SET otp_verified = true WHERE email = $1", [email]);
     return res.json({ message: "Email verified. You can now login." });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: "OTP verification failed", error: err.message });
   }
 }
 
 async function resendNgoOtp(req, res) {
   try {
     const { email } = req.body;
-    const ngo = await prisma.ngo.findUnique({ where: { email } });
+    const { rows } = await pool.query("SELECT * FROM ngos WHERE email = $1", [email]);
+    const ngo = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!ngo) return res.status(404).json({ message: "NGO not found" });
     await sendOtp(email);
     return res.json({ message: "OTP resent" });
@@ -323,7 +360,8 @@ async function resendNgoOtp(req, res) {
 
 async function forgotNgoPassword(req, res) {
   const { email } = req.body;
-  const ngo = await prisma.ngo.findUnique({ where: { email } });
+  const { rows } = await pool.query("SELECT * FROM ngos WHERE email = $1", [email]);
+  const ngo = rows[0] ? mapRowKeys(rows[0]) : null;
   if (ngo) await sendOtp(email, "reset");
   return res.json({ message: "If that email exists, a reset OTP has been sent." });
 }
@@ -335,7 +373,7 @@ async function resetNgoPassword(req, res) {
     if (!valid) return res.status(400).json({ message: "Invalid or expired OTP" });
 
     const passwordHash = await hashPassword(newPassword);
-    await prisma.ngo.update({ where: { email }, data: { passwordHash } });
+    await pool.query("UPDATE ngos SET password_hash = $1 WHERE email = $2", [passwordHash, email]);
     return res.json({ message: "Password reset successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -351,24 +389,19 @@ async function logout(req, res) {
 async function getMe(req, res) {
   const { id, role } = req.user;
   if (role === "user") {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true, name: true, email: true, phoneNumber: true,
-        photoUrl: true, location: true, occupation: true
-      },
-    });
+    const { rows } = await pool.query(
+      "SELECT id, name, email, phone_number, photo_url, location, occupation FROM users WHERE id = $1",
+      [id]
+    );
+    const user = rows[0] ? mapRowKeys(rows[0]) : null;
     return res.json(user);
   }
   if (role === "ngo") {
-    const ngo = await prisma.ngo.findUnique({
-      where: { id },
-      select: {
-        id: true, name: true, email: true, phoneNumber: true,
-        photoUrl: true, location: true, verified: true,
-        registrationNumber: true, areaOfWork: true, description: true
-      },
-    });
+    const { rows } = await pool.query(
+      "SELECT id, name, email, phone_number, photo_url, location, verified, registration_number, area_of_work, description FROM ngos WHERE id = $1",
+      [id]
+    );
+    const ngo = rows[0] ? mapRowKeys(rows[0]) : null;
     return res.json(ngo);
   }
   return res.status(400).json({ message: "Unknown role" });

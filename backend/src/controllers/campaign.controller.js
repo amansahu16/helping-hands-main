@@ -1,27 +1,74 @@
 //  CAMPAIGNS — controllers/campaign.controller.js
 // ============================================================
-import { prisma } from "../lib/prisma.js";
+import pool, { mapRowKeys, mapRows } from "../config/db.js";
+import crypto from "crypto";
  
 async function listCampaigns(req, res) {
   try {
     const { status, type, location, organizerUserId, organizerNgoId, page = 1, limit = 100 } = req.query;
-    const campaigns = await prisma.campaign.findMany({
-      where: {
-        status: status ? status : { notIn: ["COMPLETED", "CANCELLED"] },
-        ...(type     && { type }),
-        ...(location && { location: { contains: location, mode: "insensitive" } }),
-        ...(organizerUserId && { organizerUserId }),
-        ...(organizerNgoId  && { organizerNgoId }),
-      },
-      include: {
-        organizerUser: { select: { id: true, name: true, photoUrl: true } },
-        organizerNgo:  { select: { id: true, name: true, photoUrl: true } },
-        _count:        { select: { participants: true } },
-      },
-      skip: (page - 1) * limit,
-      take: Number(limit),
-      orderBy: { timeFrom: "asc" },
+    const offset = (Number(page) - 1) * Number(limit);
+    const params = [];
+    let paramIndex = 1;
+
+    let queryText = `
+      SELECT c.*, 
+             u.name AS "user_name", u.photo_url AS "user_photoUrl",
+             n.name AS "ngo_name", n.photo_url AS "ngo_photoUrl",
+             (SELECT COUNT(*)::int FROM campaign_participants cp WHERE cp.campaign_id = c.id) AS "participants_count"
+      FROM campaigns c
+      LEFT JOIN users u ON c.organizer_user_id = u.id
+      LEFT JOIN ngos n ON c.organizer_ngo_id = n.id
+      WHERE 1=1
+    `;
+
+    if (status) {
+      queryText += ` AND c.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    } else {
+      queryText += ` AND c.status NOT IN ($${paramIndex}, $${paramIndex + 1})`;
+      params.push("COMPLETED", "CANCELLED");
+      paramIndex += 2;
+    }
+
+    if (type) {
+      queryText += ` AND c.type = $${paramIndex}`;
+      params.push(type);
+      paramIndex++;
+    }
+
+    if (location) {
+      queryText += ` AND c.location ILIKE $${paramIndex}`;
+      params.push(`%${location}%`);
+      paramIndex++;
+    }
+
+    if (organizerUserId) {
+      queryText += ` AND c.organizer_user_id = $${paramIndex}`;
+      params.push(organizerUserId);
+      paramIndex++;
+    }
+
+    if (organizerNgoId) {
+      queryText += ` AND c.organizer_ngo_id = $${paramIndex}`;
+      params.push(organizerNgoId);
+      paramIndex++;
+    }
+
+    queryText += ` ORDER BY c.time_from ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(Number(limit), offset);
+
+    const { rows } = await pool.query(queryText, params);
+    const campaigns = rows.map((row) => {
+      const camel = mapRowKeys(row);
+      return {
+        ...camel,
+        organizerUser: row.organizer_user_id ? { id: row.organizer_user_id, name: row.user_name, photoUrl: row.user_photoUrl } : null,
+        organizerNgo: row.organizer_ngo_id ? { id: row.organizer_ngo_id, name: row.ngo_name, photoUrl: row.ngo_photoUrl } : null,
+        _count: { participants: row.participants_count || 0 },
+      };
     });
+
     return res.json(campaigns);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -30,15 +77,28 @@ async function listCampaigns(req, res) {
  
 async function getCampaignById(req, res) {
   try {
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: req.params.id },
-      include: {
-        organizerUser: { select: { id: true, name: true, photoUrl: true } },
-        organizerNgo:  { select: { id: true, name: true, photoUrl: true } },
-        _count:        { select: { participants: true } },
-      },
-    });
-    if (!campaign) return res.status(404).json({ message: "Campaign not found" });
+    const queryText = `
+      SELECT c.*, 
+             u.name AS "user_name", u.photo_url AS "user_photoUrl",
+             n.name AS "ngo_name", n.photo_url AS "ngo_photoUrl",
+             (SELECT COUNT(*)::int FROM campaign_participants cp WHERE cp.campaign_id = c.id) AS "participants_count"
+      FROM campaigns c
+      LEFT JOIN users u ON c.organizer_user_id = u.id
+      LEFT JOIN ngos n ON c.organizer_ngo_id = n.id
+      WHERE c.id = $1
+    `;
+    const { rows } = await pool.query(queryText, [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ message: "Campaign not found" });
+
+    const row = rows[0];
+    const camel = mapRowKeys(row);
+    const campaign = {
+      ...camel,
+      organizerUser: row.organizer_user_id ? { id: row.organizer_user_id, name: row.user_name, photoUrl: row.user_photoUrl } : null,
+      organizerNgo: row.organizer_ngo_id ? { id: row.organizer_ngo_id, name: row.ngo_name, photoUrl: row.ngo_photoUrl } : null,
+      _count: { participants: row.participants_count || 0 },
+    };
+
     return res.json(campaign);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -47,23 +107,34 @@ async function getCampaignById(req, res) {
  
 async function getCampaignParticipants(req, res) {
   try {
-    const participants = await prisma.campaignParticipant.findMany({
-      where: { campaignId: req.params.id },
-      include: {
+    const queryText = `
+      SELECT cp.*, 
+             u.name AS "user_name", u.email AS "user_email", u.phone_number AS "user_phone", 
+             u.date_of_birth AS "user_dob", u.location AS "user_location", 
+             u.photo_url AS "user_photoUrl", u.occupation AS "user_occupation"
+      FROM campaign_participants cp
+      JOIN users u ON cp.user_id = u.id
+      WHERE cp.campaign_id = $1
+    `;
+    const { rows } = await pool.query(queryText, [req.params.id]);
+    
+    const participants = mapRows(rows).map((row, idx) => {
+      const origRow = rows[idx];
+      return {
+        ...row,
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phoneNumber: true,
-            dateOfBirth: true,
-            location: true,
-            photoUrl: true,
-            occupation: true
-          }
-        }
-      },
+          id: row.userId,
+          name: origRow.user_name,
+          email: origRow.user_email,
+          phoneNumber: origRow.user_phone,
+          dateOfBirth: origRow.user_dob,
+          location: origRow.user_location,
+          photoUrl: origRow.user_photoUrl,
+          occupation: origRow.user_occupation,
+        },
+      };
     });
+
     return res.json(participants);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -75,18 +146,37 @@ async function createCampaign(req, res) {
     const { name, type, description, location, timeFrom, timeTo, maxParticipants, latitude, longitude } = req.body;
     const { id, role } = req.user;
  
-    const campaign = await prisma.campaign.create({
-      data: {
-        name, type: type || 'OTHER', description, location,
-        timeFrom: timeFrom ? new Date(timeFrom) : null,
-        timeTo:   timeTo   ? new Date(timeTo)   : null,
-        maxParticipants: maxParticipants ? Number(maxParticipants) : null,
-        latitude: latitude !== undefined && latitude !== null ? parseFloat(latitude) : null,
-        longitude: longitude !== undefined && longitude !== null ? parseFloat(longitude) : null,
-        ...(role === "user" && { organizerUserId: id }),
-        ...(role === "ngo"  && { organizerNgoId:  id }),
-      },
-    });
+    const idVal = crypto.randomUUID();
+    const parsedTimeFrom = timeFrom ? new Date(timeFrom) : null;
+    const parsedTimeTo = timeTo ? new Date(timeTo) : null;
+    const parsedMax = maxParticipants ? Number(maxParticipants) : null;
+    const lat = latitude !== undefined && latitude !== null ? parseFloat(latitude) : null;
+    const lon = longitude !== undefined && longitude !== null ? parseFloat(longitude) : null;
+    const organizerUserId = role === "user" ? id : null;
+    const organizerNgoId = role === "ngo" ? id : null;
+
+    const { rows } = await pool.query(
+      `INSERT INTO campaigns (
+        id, name, type, description, location, time_from, time_to, max_participants,
+        current_participants, status, created_at, latitude, longitude, organizer_user_id, organizer_ngo_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'PLANNED', NOW(), $9, $10, $11, $12) RETURNING *`,
+      [
+        idVal,
+        name,
+        type || "OTHER",
+        description || null,
+        location || null,
+        parsedTimeFrom,
+        parsedTimeTo,
+        parsedMax,
+        lat,
+        lon,
+        organizerUserId,
+        organizerNgoId,
+      ]
+    );
+
+    const campaign = mapRowKeys(rows[0]);
     return res.status(201).json(campaign);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -95,7 +185,8 @@ async function createCampaign(req, res) {
  
 async function updateCampaign(req, res) {
   try {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM campaigns WHERE id = $1", [req.params.id]);
+    const campaign = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!campaign) return res.status(404).json({ message: "Campaign not found" });
  
     const { id, role } = req.user;
@@ -105,20 +196,61 @@ async function updateCampaign(req, res) {
     if (!isOrganizer) return res.status(403).json({ message: "Forbidden" });
  
     const { name, description, location, timeFrom, timeTo, maxParticipants, latitude, longitude } = req.body;
-    const updated = await prisma.campaign.update({
-      where: { id: req.params.id },
-      data: { 
-        name, 
-        description, 
-        location, 
-        timeFrom: timeFrom ? new Date(timeFrom) : undefined,
-        timeTo:   timeTo   ? new Date(timeTo)   : undefined,
-        maxParticipants: maxParticipants !== undefined ? Number(maxParticipants) : undefined,
-        latitude: latitude !== undefined ? (latitude !== null ? parseFloat(latitude) : null) : undefined,
-        longitude: longitude !== undefined ? (longitude !== null ? parseFloat(longitude) : null) : undefined
-      },
-    });
-    return res.json(updated);
+    
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIndex}`);
+      params.push(name);
+      paramIndex++;
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIndex}`);
+      params.push(description);
+      paramIndex++;
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramIndex}`);
+      params.push(location);
+      paramIndex++;
+    }
+    if (timeFrom !== undefined) {
+      updates.push(`time_from = $${paramIndex}`);
+      params.push(timeFrom ? new Date(timeFrom) : null);
+      paramIndex++;
+    }
+    if (timeTo !== undefined) {
+      updates.push(`time_to = $${paramIndex}`);
+      params.push(timeTo ? new Date(timeTo) : null);
+      paramIndex++;
+    }
+    if (maxParticipants !== undefined) {
+      updates.push(`max_participants = $${paramIndex}`);
+      params.push(maxParticipants !== null ? Number(maxParticipants) : null);
+      paramIndex++;
+    }
+    if (latitude !== undefined) {
+      updates.push(`latitude = $${paramIndex}`);
+      params.push(latitude !== null ? parseFloat(latitude) : null);
+      paramIndex++;
+    }
+    if (longitude !== undefined) {
+      updates.push(`longitude = $${paramIndex}`);
+      params.push(longitude !== null ? parseFloat(longitude) : null);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return res.json(campaign);
+    }
+
+    params.push(req.params.id);
+    const query = `UPDATE campaigns SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+    const { rows: updateRows } = await pool.query(query, params);
+    
+    return res.json(mapRowKeys(updateRows[0]));
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -126,7 +258,8 @@ async function updateCampaign(req, res) {
  
 async function deleteCampaign(req, res) {
   try {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM campaigns WHERE id = $1", [req.params.id]);
+    const campaign = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!campaign) return res.status(404).json({ message: "Campaign not found" });
  
     const { id, role } = req.user;
@@ -135,7 +268,7 @@ async function deleteCampaign(req, res) {
       (role === "ngo"  && campaign.organizerNgoId  === id);
     if (!isOrganizer) return res.status(403).json({ message: "Forbidden" });
  
-    await prisma.campaign.delete({ where: { id: req.params.id } });
+    await pool.query("DELETE FROM campaigns WHERE id = $1", [req.params.id]);
     return res.json({ message: "Campaign deleted" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -144,7 +277,8 @@ async function deleteCampaign(req, res) {
  
 async function updateStatus(req, res) {
   try {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM campaigns WHERE id = $1", [req.params.id]);
+    const campaign = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!campaign) return res.status(404).json({ message: "Campaign not found" });
  
     const { id, role } = req.user;
@@ -154,8 +288,11 @@ async function updateStatus(req, res) {
     if (!isOrganizer) return res.status(403).json({ message: "Forbidden" });
  
     const { status } = req.body;
-    const updated = await prisma.campaign.update({ where: { id: req.params.id }, data: { status } });
-    return res.json(updated);
+    const { rows } = await pool.query(
+      "UPDATE campaigns SET status = $1 WHERE id = $2 RETURNING *",
+      [status, req.params.id]
+    );
+    return res.json(mapRowKeys(rows[0]));
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -163,7 +300,8 @@ async function updateStatus(req, res) {
  
 async function joinCampaign(req, res) {
   try {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+    const { rows: checkRows } = await pool.query("SELECT * FROM campaigns WHERE id = $1", [req.params.id]);
+    const campaign = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
     if (!campaign) return res.status(404).json({ message: "Campaign not found" });
     if (campaign.status !== "PLANNED" && campaign.status !== "ONGOING") {
       return res.status(409).json({ message: "Campaign is not open for registration" });
@@ -173,34 +311,51 @@ async function joinCampaign(req, res) {
     }
  
     const { identityNumber } = req.body || {};
- 
-    const participant = await prisma.campaignParticipant.create({
-      data: { campaignId: campaign.id, userId: req.user.id, identityNumber, status: "PENDING" },
-    });
-    return res.status(201).json(participant);
+    const id = crypto.randomUUID();
+
+    const { rows } = await pool.query(
+      `INSERT INTO campaign_participants (id, campaign_id, user_id, identity_number, status, joined_at)
+       VALUES ($1, $2, $3, $4, 'PENDING', NOW()) RETURNING *`,
+      [id, campaign.id, req.user.id, identityNumber || null]
+    );
+    
+    return res.status(201).json(mapRowKeys(rows[0]));
   } catch (err) {
-    if (err.code === "P2002") return res.status(409).json({ message: "Already registered" });
+    if (err.code === "23505") return res.status(409).json({ message: "Already registered" });
     return res.status(500).json({ message: err.message });
   }
 }
  
 async function leaveCampaign(req, res) {
   try {
-    const participant = await prisma.campaignParticipant.findFirst({
-      where: { campaignId: req.params.id, userId: req.user.id },
-    });
+    const { rows } = await pool.query(
+      "SELECT * FROM campaign_participants WHERE campaign_id = $1 AND user_id = $2",
+      [req.params.id, req.user.id]
+    );
+    const participant = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!participant) return res.status(404).json({ message: "You are not registered for this campaign" });
  
-    await prisma.$transaction(async (tx) => {
-      await tx.campaignParticipant.delete({ where: { id: participant.id } });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      
+      await client.query("DELETE FROM campaign_participants WHERE id = $1", [participant.id]);
+      
       if (participant.status === "APPROVED" || participant.status === "REGISTERED") {
-        await tx.campaign.update({
-          where: { id: req.params.id },
-          data: { currentParticipants: { decrement: 1 } },
-        });
+        await client.query(
+          "UPDATE campaigns SET current_participants = current_participants - 1 WHERE id = $1",
+          [req.params.id]
+        );
       }
-    });
-    return res.json({ message: "Left campaign successfully" });
+      
+      await client.query("COMMIT");
+      return res.json({ message: "Left campaign successfully" });
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -209,39 +364,63 @@ async function leaveCampaign(req, res) {
 async function updateParticipantStatus(req, res) {
   try {
     const { status, code } = req.body; // APPROVED | REJECTED | ATTENDED | CANCELLED
-    const participant = await prisma.campaignParticipant.findUnique({
-      where: { id: req.params.participantId },
-      include: { campaign: true },
-    });
+    
+    const { rows: partRows } = await pool.query(
+      `SELECT cp.*, c.organizer_user_id, c.organizer_ngo_id
+       FROM campaign_participants cp
+       JOIN campaigns c ON cp.campaign_id = c.id
+       WHERE cp.id = $1`,
+      [req.params.participantId]
+    );
+    
+    const participant = partRows[0] ? mapRowKeys(partRows[0]) : null;
     if (!participant) return res.status(404).json({ message: "Participant not found" });
  
     const { id, role } = req.user;
     const isOrganizer =
-      (role === "user" && participant.campaign.organizerUserId === id) ||
-      (role === "ngo"  && participant.campaign.organizerNgoId  === id);
+      (role === "user" && participant.organizerUserId === id) ||
+      (role === "ngo"  && participant.organizerNgoId  === id);
     if (!isOrganizer) return res.status(403).json({ message: "Forbidden" });
  
-    const updated = await prisma.$transaction(async (tx) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
       // If moving from PENDING to APPROVED, increment campaign's currentParticipants
       if (participant.status === "PENDING" && status === "APPROVED") {
-        await tx.campaign.update({
-          where: { id: participant.campaignId },
-          data: { currentParticipants: { increment: 1 } },
-        });
+        await client.query(
+          "UPDATE campaigns SET current_participants = current_participants + 1 WHERE id = $1",
+          [participant.campaignId]
+        );
       }
       // If moving from APPROVED to CANCELLED/REJECTED, decrement campaign's currentParticipants
       if ((participant.status === "APPROVED" || participant.status === "REGISTERED") && (status === "CANCELLED" || status === "REJECTED")) {
-        await tx.campaign.update({
-          where: { id: participant.campaignId },
-          data: { currentParticipants: { decrement: 1 } },
-        });
+        await client.query(
+          "UPDATE campaigns SET current_participants = current_participants - 1 WHERE id = $1",
+          [participant.campaignId]
+        );
       }
-      return await tx.campaignParticipant.update({
-        where: { id: req.params.participantId },
-        data: { status, ...(code !== undefined && { code }) },
-      });
-    });
-    return res.json(updated);
+      
+      let updateQuery;
+      let params;
+      if (code !== undefined) {
+        updateQuery = "UPDATE campaign_participants SET status = $1, code = $2 WHERE id = $3 RETURNING *";
+        params = [status, code, req.params.participantId];
+      } else {
+        updateQuery = "UPDATE campaign_participants SET status = $1 WHERE id = $2 RETURNING *";
+        params = [status, req.params.participantId];
+      }
+
+      const updateRes = await client.query(updateQuery, params);
+      
+      await client.query("COMMIT");
+      return res.json(mapRowKeys(updateRes.rows[0]));
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { prisma } from "../lib/prisma.js";
+import crypto from "crypto";
+import pool, { mapRowKeys, mapRows } from "../config/db.js";
 import { sendAdminLoginOtp, verifyOtp } from "../services/otp.service.js";
 
 // Helper functions for JWT
@@ -34,19 +35,17 @@ async function registerAdmin(req, res) {
       return res.status(400).json({ message: "Password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*__." });
     }
 
-    const exists = await prisma.admin.findUnique({ where: { email } });
-    if (exists) return res.status(409).json({ message: "Email already registered as admin" });
+    const checkRes = await pool.query("SELECT id FROM admins WHERE email = $1", [email]);
+    if (checkRes.rows.length > 0) return res.status(409).json({ message: "Email already registered as admin" });
 
     const passwordHash = await hashPassword(password);
+    const id = crypto.randomUUID();
 
-    const admin = await prisma.admin.create({
-      data: {
-        name,
-        email,
-        phoneNumber,
-        passwordHash,
-      },
-    });
+    const insertRes = await pool.query(
+      "INSERT INTO admins (id, name, email, phone_number, password_hash, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *",
+      [id, name, email, phoneNumber, passwordHash]
+    );
+    const admin = mapRowKeys(insertRes.rows[0]);
 
     return res.status(201).json({
       message: "Admin registered successfully! You can now login.",
@@ -66,7 +65,8 @@ async function loginAdmin(req, res) {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const admin = await prisma.admin.findUnique({ where: { email } });
+    const { rows } = await pool.query("SELECT * FROM admins WHERE email = $1", [email]);
+    const admin = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!admin) return res.status(401).json({ message: "Invalid admin credentials" });
 
     const valid = await comparePassword(password, admin.passwordHash);
@@ -94,7 +94,8 @@ async function verifyLoginOtp(req, res) {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
-    const admin = await prisma.admin.findUnique({ where: { email } });
+    const { rows } = await pool.query("SELECT * FROM admins WHERE email = $1", [email]);
+    const admin = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!admin) return res.status(404).json({ message: "Admin not found" });
 
     const valid = await verifyOtp(email, otp);
@@ -123,6 +124,11 @@ async function verifyLoginOtp(req, res) {
 
 async function getStats(req, res) {
   try {
+    const queryHelper = async (queryText, params = []) => {
+      const res = await pool.query(queryText, params);
+      return parseInt(res.rows[0].count, 10);
+    };
+
     const [
       donationsCount,
       animalsCount,
@@ -141,38 +147,25 @@ async function getStats(req, res) {
       activeDonationsCount,
       transactionStats
     ] = await Promise.all([
-      prisma.donation.count(),
-      prisma.animal.count(),
-      prisma.ngo.count(),
-      prisma.user.count(),
-      prisma.campaign.count(),
-      prisma.complaint.count(),
-      prisma.rescueRequest.count({ where: { status: "OPEN" } }),
-      prisma.rescueRequest.count({ where: { status: "ASSIGNED" } }),
-      prisma.rescueRequest.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }),
-      prisma.campaign.count({ where: { status: "COMPLETED" } }),
-      prisma.campaign.count({ where: { status: "ONGOING" } }),
-      prisma.campaign.count({ where: { status: "PLANNED" } }),
-      prisma.adoption.count({ where: { status: "COMPLETED" } }),
-      prisma.campaign.count({
-        where: {
-          type: "ANIMAL_WELFARE",
-          status: "COMPLETED",
-        },
-      }),
-      prisma.donation.count({
-        where: { status: { in: ["ACCEPTED", "PICKED_UP", "DELIVERED"] } }
-      }),
-      prisma.donation.aggregate({
-        where: {
-          amount: { not: null }
-        },
-        _count: true,
-        _sum: {
-          amount: true
-        }
-      })
+      queryHelper("SELECT COUNT(*)::int AS count FROM donations"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM animals"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM ngos"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM users"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM complaints"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status = 'OPEN'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status = 'ASSIGNED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status IN ('RESOLVED', 'CLOSED')"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE status = 'COMPLETED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE status = 'ONGOING'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE status = 'PLANNED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM adoptions WHERE status = 'COMPLETED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE type = 'ANIMAL_WELFARE' AND status = 'COMPLETED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM donations WHERE status IN ('ACCEPTED', 'PICKED_UP', 'DELIVERED')"),
+      pool.query("SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::float AS sum FROM donations WHERE amount IS NOT NULL")
     ]);
+
+    const txStats = transactionStats.rows[0];
 
     return res.json({
       core: {
@@ -201,8 +194,8 @@ async function getStats(req, res) {
         circulated: activeDonationsCount,
       },
       transactions: {
-        count: transactionStats._count || 0,
-        sum: transactionStats._sum.amount || 0
+        count: txStats.count || 0,
+        sum: txStats.sum || 0
       }
     });
   } catch (err) {
@@ -214,10 +207,8 @@ async function getStats(req, res) {
 
 async function listNgos(req, res) {
   try {
-    const ngos = await prisma.ngo.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    return res.json(ngos);
+    const { rows } = await pool.query("SELECT * FROM ngos ORDER BY created_at DESC");
+    return res.json(mapRows(rows));
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -232,10 +223,11 @@ async function verifyNgo(req, res) {
       return res.status(400).json({ message: "verified field is required" });
     }
 
-    const ngo = await prisma.ngo.update({
-      where: { id },
-      data: { verified: !!verified },
-    });
+    const { rows } = await pool.query(
+      "UPDATE ngos SET verified = $1 WHERE id = $2 RETURNING *",
+      [!!verified, id]
+    );
+    const ngo = mapRowKeys(rows[0]);
 
     return res.json({ message: `NGO verified status set to ${verified}`, ngo });
   } catch (err) {
@@ -247,20 +239,56 @@ async function verifyNgo(req, res) {
 
 async function listOperations(req, res) {
   try {
-    const [campaigns, donations, rescues, users, ngos] = await Promise.all([
-      prisma.campaign.findMany({ include: { organizerUser: { select: { name: true } }, organizerNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
-      prisma.donation.findMany({ include: { donor: { select: { name: true } }, donorNgo: { select: { name: true } }, recipientNgo: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
-      prisma.rescueRequest.findMany({
-        include: {
-          reporter: { select: { name: true } },
-          reporterNgo: { select: { name: true } },
-          nearbyCenter: { select: { name: true } }
-        },
-        orderBy: { createdAt: "desc" }
-      }),
-      prisma.user.findMany({ select: { id: true, name: true, email: true, phoneNumber: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
-      prisma.ngo.findMany({ select: { id: true, name: true, email: true, registrationNumber: true, verified: true, createdAt: true }, orderBy: { createdAt: "desc" } })
+    const [cRes, dRes, rRes, uRes, nRes] = await Promise.all([
+      pool.query(`
+        SELECT c.*, u.name AS "organizerUser_name", n.name AS "organizerNgo_name"
+        FROM campaigns c
+        LEFT JOIN users u ON c.organizer_user_id = u.id
+        LEFT JOIN ngos n ON c.organizer_ngo_id = n.id
+        ORDER BY c.created_at DESC
+      `),
+      pool.query(`
+        SELECT d.*, u.name AS "donor_name", n1.name AS "donorNgo_name", n2.name AS "recipientNgo_name"
+        FROM donations d
+        LEFT JOIN users u ON d.donor_id = u.id
+        LEFT JOIN ngos n1 ON d.donor_ngo_id = n1.id
+        LEFT JOIN ngos n2 ON d.recipient_ngo_id = n2.id
+        ORDER BY d.created_at DESC
+      `),
+      pool.query(`
+        SELECT r.*, u.name AS "reporter_name", n1.name AS "reporterNgo_name", n2.name AS "nearbyCenter_name"
+        FROM rescue_requests r
+        LEFT JOIN users u ON r.reporter_id = u.id
+        LEFT JOIN ngos n1 ON r.reporter_ngo_id = n1.id
+        LEFT JOIN ngos n2 ON r.nearby_center_id = n2.id
+        ORDER BY r.created_at DESC
+      `),
+      pool.query("SELECT id, name, email, phone_number, created_at FROM users ORDER BY created_at DESC"),
+      pool.query("SELECT id, name, email, registration_number, verified, created_at FROM ngos ORDER BY created_at DESC")
     ]);
+
+    const campaigns = mapRows(cRes.rows).map(row => ({
+      ...row,
+      organizerUser: row.organizerUserId ? { name: row.organizeruserName } : null,
+      organizerNgo: row.organizerNgoId ? { name: row.organizerngoName } : null
+    }));
+
+    const donations = mapRows(dRes.rows).map(row => ({
+      ...row,
+      donor: row.donorId ? { name: row.donorName } : null,
+      donorNgo: row.donorNgoId ? { name: row.donorngoName } : null,
+      recipientNgo: row.recipientNgoId ? { name: row.recipientngoName } : null
+    }));
+
+    const rescues = mapRows(rRes.rows).map(row => ({
+      ...row,
+      reporter: row.reporterId ? { name: row.reporterName } : null,
+      reporterNgo: row.reporterNgoId ? { name: row.reporterngoName } : null,
+      nearbyCenter: row.nearbyCenterId ? { name: row.nearbycenterName } : null
+    }));
+
+    const users = mapRows(uRes.rows);
+    const ngos = mapRows(nRes.rows);
 
     return res.json({ campaigns, donations, rescues, users, ngos });
   } catch (err) {
@@ -273,15 +301,15 @@ async function deleteOperation(req, res) {
     const { type, id } = req.params;
 
     if (type === "campaign") {
-      await prisma.campaign.delete({ where: { id } });
+      await pool.query("DELETE FROM campaigns WHERE id = $1", [id]);
     } else if (type === "donation") {
-      await prisma.donation.delete({ where: { id } });
+      await pool.query("DELETE FROM donations WHERE id = $1", [id]);
     } else if (type === "rescue") {
-      await prisma.rescueRequest.delete({ where: { id } });
+      await pool.query("DELETE FROM rescue_requests WHERE id = $1", [id]);
     } else if (type === "user") {
-      await prisma.user.delete({ where: { id } });
+      await pool.query("DELETE FROM users WHERE id = $1", [id]);
     } else if (type === "ngo") {
-      await prisma.ngo.delete({ where: { id } });
+      await pool.query("DELETE FROM ngos WHERE id = $1", [id]);
     } else {
       return res.status(400).json({ message: "Invalid operation type" });
     }
@@ -296,14 +324,13 @@ async function deleteOperation(req, res) {
 
 async function getContactSettings(req, res) {
   try {
-    const settings = await prisma.systemSetting.findMany();
-    // Transform array to key-value object
+    const { rows } = await pool.query("SELECT * FROM system_settings");
+    const settings = mapRows(rows);
     const settingsObj = {};
     settings.forEach(s => {
       settingsObj[s.key] = s.value;
     });
 
-    // Provide fallbacks if not seeded
     return res.json({
       contact_email: settingsObj.contact_email || "hello@helpinghands.org",
       contact_phone: settingsObj.contact_phone || "+91 12345 67890",
@@ -319,25 +346,22 @@ async function updateContactSettings(req, res) {
     const { contact_email, contact_phone, contact_network } = req.body;
 
     if (contact_email) {
-      await prisma.systemSetting.upsert({
-        where: { key: "contact_email" },
-        update: { value: contact_email },
-        create: { key: "contact_email", value: contact_email }
-      });
+      await pool.query(
+        "INSERT INTO system_settings (key, value) VALUES ('contact_email', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+        [contact_email]
+      );
     }
     if (contact_phone) {
-      await prisma.systemSetting.upsert({
-        where: { key: "contact_phone" },
-        update: { value: contact_phone },
-        create: { key: "contact_phone", value: contact_phone }
-      });
+      await pool.query(
+        "INSERT INTO system_settings (key, value) VALUES ('contact_phone', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+        [contact_phone]
+      );
     }
     if (contact_network) {
-      await prisma.systemSetting.upsert({
-        where: { key: "contact_network" },
-        update: { value: contact_network },
-        create: { key: "contact_network", value: contact_network }
-      });
+      await pool.query(
+        "INSERT INTO system_settings (key, value) VALUES ('contact_network', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+        [contact_network]
+      );
     }
 
     return res.json({ message: "Contact settings updated successfully" });
@@ -353,15 +377,16 @@ async function addLocation(req, res) {
       return res.status(400).json({ message: "Name and address are required" });
     }
 
-    const location = await prisma.location.create({
-      data: {
-        name,
-        address,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        type: type || "GENERAL",
-      },
-    });
+    const id = crypto.randomUUID();
+    const lat = latitude ? parseFloat(latitude) : null;
+    const lon = longitude ? parseFloat(longitude) : null;
+    const locType = type || "GENERAL";
+
+    const { rows } = await pool.query(
+      "INSERT INTO locations (id, name, address, latitude, longitude, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [id, name, address, lat, lon, locType]
+    );
+    const location = mapRowKeys(rows[0]);
 
     return res.status(201).json(location);
   } catch (err) {
@@ -372,7 +397,7 @@ async function addLocation(req, res) {
 async function deleteLocation(req, res) {
   try {
     const { id } = req.params;
-    await prisma.location.delete({ where: { id } });
+    await pool.query("DELETE FROM locations WHERE id = $1", [id]);
     return res.json({ message: "Location deleted successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -383,19 +408,33 @@ async function deleteLocation(req, res) {
 
 async function listFeedbacks(req, res) {
   try {
-    const [testimonials, contactMessages, complaints] = await Promise.all([
-      prisma.testimonial.findMany({
-        include: { user: { select: { name: true, email: true } } },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.contactMessage.findMany({
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.complaint.findMany({
-        include: { reporter: { select: { name: true, email: true } } },
-        orderBy: { createdAt: "desc" },
-      })
+    const [tRes, cRes, compRes] = await Promise.all([
+      pool.query(`
+        SELECT t.*, u.name AS "user_name", u.email AS "user_email"
+        FROM testimonials t
+        LEFT JOIN users u ON t.user_id = u.id
+        ORDER BY t.created_at DESC
+      `),
+      pool.query("SELECT * FROM contact_messages ORDER BY created_at DESC"),
+      pool.query(`
+        SELECT c.*, u.name AS "reporter_name", u.email AS "reporter_email"
+        FROM complaints c
+        LEFT JOIN users u ON c.reporter_id = u.id
+        ORDER BY c.created_at DESC
+      `)
     ]);
+
+    const testimonials = mapRows(tRes.rows).map(row => ({
+      ...row,
+      user: row.userId ? { name: row.userName, email: row.userEmail } : null
+    }));
+
+    const contactMessages = mapRows(cRes.rows);
+
+    const complaints = mapRows(compRes.rows).map(row => ({
+      ...row,
+      reporter: row.reporterId ? { name: row.reporterName, email: row.reporterEmail } : null
+    }));
 
     return res.json({ testimonials, contactMessages, complaints });
   } catch (err) {
@@ -407,9 +446,9 @@ async function deleteFeedback(req, res) {
   try {
     const { type, id } = req.params;
     if (type === "testimonial") {
-      await prisma.testimonial.delete({ where: { id } });
+      await pool.query("DELETE FROM testimonials WHERE id = $1", [id]);
     } else if (type === "message") {
-      await prisma.contactMessage.delete({ where: { id } });
+      await pool.query("DELETE FROM contact_messages WHERE id = $1", [id]);
     } else {
       return res.status(400).json({ message: "Invalid type" });
     }
@@ -424,10 +463,11 @@ async function resolveComplaint(req, res) {
     const { id } = req.params;
     const { status } = req.body; // RESOLVED | DISMISSED | PENDING
 
-    const complaint = await prisma.complaint.update({
-      where: { id },
-      data: { status },
-    });
+    const { rows } = await pool.query(
+      "UPDATE complaints SET status = $1 WHERE id = $2 RETURNING *",
+      [status, id]
+    );
+    const complaint = mapRowKeys(rows[0]);
 
     return res.json({ message: `Complaint status updated to ${status}`, complaint });
   } catch (err) {
@@ -442,15 +482,15 @@ async function reportComplaint(req, res) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const complaint = await prisma.complaint.create({
-      data: {
-        reporterId: req.user?.id || null,
-        title,
-        description,
-        targetType,
-        targetId,
-      },
-    });
+    const id = crypto.randomUUID();
+    const reporterId = req.user?.id || null;
+
+    const { rows } = await pool.query(
+      `INSERT INTO complaints (id, reporter_id, title, description, target_type, target_id, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'PENDING', NOW()) RETURNING *`,
+      [id, reporterId, title, description, targetType, targetId]
+    );
+    const complaint = mapRowKeys(rows[0]);
 
     return res.status(201).json({ message: "Complaint filed successfully", complaint });
   } catch (err) {

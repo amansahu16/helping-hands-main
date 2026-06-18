@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { prisma } from "../lib/prisma.js";
+import pool, { mapRowKeys } from "../config/db.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -58,11 +58,14 @@ export const requireAuth = async (req, res, next) => {
     let userOrNgo = null;
     try {
       if (role === "user") {
-        userOrNgo = await prisma.user.findUnique({ where: { id: decoded.id } });
+        const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [decoded.id]);
+        userOrNgo = rows[0] ? mapRowKeys(rows[0]) : null;
       } else if (role === "ngo") {
-        userOrNgo = await prisma.ngo.findUnique({ where: { id: decoded.id } });
+        const { rows } = await pool.query("SELECT * FROM ngos WHERE id = $1", [decoded.id]);
+        userOrNgo = rows[0] ? mapRowKeys(rows[0]) : null;
       } else if (role === "admin") {
-        userOrNgo = await prisma.admin.findUnique({ where: { id: decoded.id } });
+        const { rows } = await pool.query("SELECT * FROM admins WHERE id = $1", [decoded.id]);
+        userOrNgo = rows[0] ? mapRowKeys(rows[0]) : null;
       }
     } catch (dbError) {
       writeDebugLog(`Database error in requireAuth: ${dbError.message}`);

@@ -2,19 +2,18 @@
 //  USER PROFILE — controllers/user.controller.js
 // ============================================================
 import bcrypt from "bcrypt";
-import { prisma } from "../lib/prisma.js";
+import pool, { mapRowKeys, mapRows } from "../config/db.js";
 import { uploadSingleImage } from "../utils/cloudinary.js";
  
 async function getProfile(req, res) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true, name: true, email: true, phoneNumber: true,
-        dateOfBirth: true, location: true, occupation: true,
-        photoUrl: true, otpVerified: true, createdAt: true,
-      },
-    });
+    const { rows } = await pool.query(
+      `SELECT id, name, email, phone_number, date_of_birth, location, 
+              occupation, photo_url, otp_verified, created_at 
+       FROM users WHERE id = $1`,
+      [req.user.id]
+    );
+    const user = rows[0] ? mapRowKeys(rows[0]) : null;
     if (!user) return res.status(404).json({ message: "User not found" });
     return res.json(user);
   } catch (err) {
@@ -31,18 +30,51 @@ async function updateProfile(req, res) {
       finalPhotoUrl = await uploadSingleImage(photoUrl);
     }
 
-    const updated = await prisma.user.update({
-      where: { id: req.user.id },
-      data: { 
-        name, 
-        phoneNumber, 
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined, 
-        location, 
-        occupation, 
-        photoUrl: finalPhotoUrl 
-      },
-      select: { id: true, name: true, email: true, photoUrl: true },
-    });
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIndex}`);
+      params.push(name);
+      paramIndex++;
+    }
+    if (phoneNumber !== undefined) {
+      updates.push(`phone_number = $${paramIndex}`);
+      params.push(phoneNumber);
+      paramIndex++;
+    }
+    if (dateOfBirth !== undefined) {
+      updates.push(`date_of_birth = $${paramIndex}`);
+      params.push(dateOfBirth ? new Date(dateOfBirth) : null);
+      paramIndex++;
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramIndex}`);
+      params.push(location);
+      paramIndex++;
+    }
+    if (occupation !== undefined) {
+      updates.push(`occupation = $${paramIndex}`);
+      params.push(occupation);
+      paramIndex++;
+    }
+    if (finalPhotoUrl !== undefined) {
+      updates.push(`photo_url = $${paramIndex}`);
+      params.push(finalPhotoUrl);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      const { rows } = await pool.query("SELECT id, name, email, photo_url FROM users WHERE id = $1", [req.user.id]);
+      return res.json(mapRowKeys(rows[0]));
+    }
+
+    params.push(req.user.id);
+    const queryText = `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING id, name, email, photo_url`;
+    const { rows } = await pool.query(queryText, params);
+    const updated = mapRowKeys(rows[0]);
+
     return res.json(updated);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -52,17 +84,20 @@ async function updateProfile(req, res) {
 async function changePassword(req, res) {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    
+    const { rows } = await pool.query("SELECT password_hash FROM users WHERE id = $1", [req.user.id]);
+    const user = rows[0] ? mapRowKeys(rows[0]) : null;
+    if (!user) return res.status(404).json({ message: "User not found" });
  
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) return res.status(400).json({ message: "Current password is incorrect" });
-
+ 
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]{8,16}$/.test(newPassword)) {
       return res.status(400).json({ message: "New password must be 8 to 16 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special symbol from !@#$%^&*__." });
     }
-
+ 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({ where: { id: req.user.id }, data: { passwordHash } });
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [passwordHash, req.user.id]);
     return res.json({ message: "Password changed successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -71,7 +106,7 @@ async function changePassword(req, res) {
  
 async function deleteAccount(req, res) {
   try {
-    await prisma.user.delete({ where: { id: req.user.id } });
+    await pool.query("DELETE FROM users WHERE id = $1", [req.user.id]);
     return res.json({ message: "Account deleted" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -81,11 +116,30 @@ async function deleteAccount(req, res) {
 async function getMyDonations(req, res) {
   try {
     console.log(`[USER CONTROLLER] Fetching donations for user: ${req.user?.id}`);
-    const donations = await prisma.donation.findMany({
-      where: { donorId: req.user.id },
-      include: { items: true, recipientNgo: { select: { id: true, name: true, photoUrl: true, registrationNumber: true, upiId: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    const { rows: donationRows } = await pool.query(
+      "SELECT * FROM donations WHERE donor_id = $1 ORDER BY created_at DESC",
+      [req.user.id]
+    );
+    const donations = mapRows(donationRows);
+
+    for (const d of donations) {
+      const { rows: itemRows } = await pool.query(
+        "SELECT * FROM donation_items WHERE donation_id = $1",
+        [d.id]
+      );
+      d.items = mapRows(itemRows);
+
+      if (d.recipientNgoId) {
+        const { rows: ngoRows } = await pool.query(
+          "SELECT id, name, photo_url, registration_number, upi_id FROM ngos WHERE id = $1",
+          [d.recipientNgoId]
+        );
+        d.recipientNgo = ngoRows[0] ? mapRowKeys(ngoRows[0]) : null;
+      } else {
+        d.recipientNgo = null;
+      }
+    }
+
     return res.json(donations);
   } catch (err) {
     console.error("[USER CONTROLLER] getMyDonations Error:", err);
@@ -95,11 +149,30 @@ async function getMyDonations(req, res) {
  
 async function getMyAdoptions(req, res) {
   try {
-    const adoptions = await prisma.adoption.findMany({
-      where: { adopterId: req.user.id },
-      include: { animal: true, ngo: { select: { id: true, name: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    const { rows: adoptionRows } = await pool.query(
+      "SELECT * FROM adoptions WHERE adopter_id = $1 ORDER BY created_at DESC",
+      [req.user.id]
+    );
+    const adoptions = mapRows(adoptionRows);
+
+    for (const a of adoptions) {
+      const { rows: animalRows } = await pool.query(
+        "SELECT * FROM animals WHERE id = $1",
+        [a.animalId]
+      );
+      a.animal = animalRows[0] ? mapRowKeys(animalRows[0]) : null;
+
+      if (a.ngoId) {
+        const { rows: ngoRows } = await pool.query(
+          "SELECT id, name FROM ngos WHERE id = $1",
+          [a.ngoId]
+        );
+        a.ngo = ngoRows[0] ? mapRowKeys(ngoRows[0]) : null;
+      } else {
+        a.ngo = null;
+      }
+    }
+
     return res.json(adoptions);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -108,11 +181,24 @@ async function getMyAdoptions(req, res) {
  
 async function getMyRescueRequests(req, res) {
   try {
-    const rescues = await prisma.rescueRequest.findMany({
-      where: { reporterId: req.user.id },
-      include: { nearbyCenter: { select: { id: true, name: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    const { rows: rescueRows } = await pool.query(
+      "SELECT * FROM rescue_requests WHERE reporter_id = $1 ORDER BY created_at DESC",
+      [req.user.id]
+    );
+    const rescues = mapRows(rescueRows);
+
+    for (const r of rescues) {
+      if (r.nearbyCenterId) {
+        const { rows: ngoRows } = await pool.query(
+          "SELECT id, name FROM ngos WHERE id = $1",
+          [r.nearbyCenterId]
+        );
+        r.nearbyCenter = ngoRows[0] ? mapRowKeys(ngoRows[0]) : null;
+      } else {
+        r.nearbyCenter = null;
+      }
+    }
+
     return res.json(rescues);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -121,15 +207,26 @@ async function getMyRescueRequests(req, res) {
  
 async function getMyCampaigns(req, res) {
   try {
-    const organized = await prisma.campaign.findMany({
-      where: { organizerUserId: req.user.id },
-      orderBy: { createdAt: "desc" },
-    });
-    const joined = await prisma.campaignParticipant.findMany({
-      where: { userId: req.user.id },
-      include: { campaign: true },
-      orderBy: { joinedAt: "desc" },
-    });
+    const { rows: orgRows } = await pool.query(
+      "SELECT * FROM campaigns WHERE organizer_user_id = $1 ORDER BY created_at DESC",
+      [req.user.id]
+    );
+    const organized = mapRows(orgRows);
+
+    const { rows: partRows } = await pool.query(
+      "SELECT * FROM campaign_participants WHERE user_id = $1 ORDER BY joined_at DESC",
+      [req.user.id]
+    );
+    const joined = mapRows(partRows);
+
+    for (const j of joined) {
+      const { rows: campRows } = await pool.query(
+        "SELECT * FROM campaigns WHERE id = $1",
+        [j.campaignId]
+      );
+      j.campaign = campRows[0] ? mapRowKeys(campRows[0]) : null;
+    }
+
     return res.json({ organized, joined });
   } catch (err) {
     return res.status(500).json({ message: err.message });
