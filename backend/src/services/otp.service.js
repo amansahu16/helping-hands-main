@@ -7,17 +7,16 @@ const otpStore = new Map();
 // Initialize NodeMailer SMTP Transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587", 10),
+  port: parseInt(process.env.SMTP_PORT || "587"),
   secure: process.env.SMTP_SECURE === "true", // usually false for port 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  // Custom lookup logic to force resolving hosts to IPv4 only.
-  // This completely resolves IPv6 ENETUNREACH errors on networks/platforms like Render.com.
-  lookup: (hostname, options, callback) => {
-    return dns.lookup(hostname, { ...options, family: 4 }, callback);
-  },
+  family: 4, // Kuch Nodemailer versions mein direct family: 4 kaam karta hai
+  dns: {
+    family: 4 // Baaki versions ke liye DNS level par IPv4 force karta hai
+  }
 });
 
 // Send Admin Login OTP
