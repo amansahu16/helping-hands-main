@@ -4,11 +4,16 @@ import dns from "dns";
 // In-memory OTP storage
 const otpStore = new Map();
 
+const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
+const smtpSecure = process.env.SMTP_SECURE !== undefined
+  ? process.env.SMTP_SECURE === "true"
+  : (smtpPort === 465);
+
 // Initialize NodeMailer SMTP Transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587", 10),
-  secure: process.env.SMTP_SECURE === "true", // usually false for port 587, true for 465
+  port: smtpPort,
+  secure: smtpSecure,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -16,7 +21,15 @@ const transporter = nodemailer.createTransport({
   // Custom lookup logic to force resolving hosts to IPv4 only.
   // This completely resolves IPv6 ENETUNREACH errors on networks/platforms like Render.com.
   lookup: (hostname, options, callback) => {
-    return dns.lookup(hostname, { ...options, family: 4 }, callback);
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    const dnsOptions = {
+      ...(typeof options === "object" ? options : {}),
+      family: 4,
+    };
+    return dns.lookup(hostname, dnsOptions, callback);
   },
 });
 
