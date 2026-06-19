@@ -120,3 +120,6 @@ dist
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
 /src/generated/prisma
+
+# Postgres local data directory
+/src/db/data/

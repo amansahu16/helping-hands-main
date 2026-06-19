@@ -1,11 +1,35 @@
 import pool from "../config/db.js";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const schemaPath = path.join(__dirname, "schema.sql");
 
 const connectDB = async () => {
     try {
         // Query to check if the connection works
         await pool.query("SELECT 1");
         console.log("\n PostgreSQL connected !!");
+
+        // Verify if tables are initialized. If not, auto-execute schema.sql
+        const tableCheck = await pool.query(
+            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users')"
+        );
+        const tablesExist = tableCheck.rows[0].exists;
+
+        if (!tablesExist) {
+            console.log("Database tables not found. Initializing schema from schema.sql...");
+            if (fs.existsSync(schemaPath)) {
+                const schemaSql = fs.readFileSync(schemaPath, "utf8");
+                await pool.query(schemaSql);
+                console.log("Database schema initialized successfully (tables and indexes created).");
+            } else {
+                throw new Error(`schema.sql file not found at ${schemaPath}`);
+            }
+        }
 
         // Seed/Upsert the default Admin
         const email = "amansahuat799959@gmail.com";
