@@ -9,7 +9,7 @@ services:
       - 5432:5432  # make sure you don't have another container running on 5432
 
     environment:
-      - POSTGRES_DB=HelpingHands
+      - POSTGRES_DB=helpinghands
       - POSTGRES_USER=amansahu
       - POSTGRES_PASSWORD=amansahu123
 
