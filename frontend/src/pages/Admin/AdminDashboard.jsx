@@ -315,6 +315,9 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </button>
+                <button onClick={() => setActiveTab('donations')} className={`flex-1 min-w-[150px] lg:min-w-0 lg:w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'donations')}`}>
+                  <Heart size={14} /> Donation Records
+                </button>
               </div>
             </div>
 
@@ -890,6 +893,102 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+
+                  {/* TAB 6: DONATIONS RECORDS */}
+                  {activeTab === 'donations' && (() => {
+                    const moneyDonations = (operations.donations || []).filter(d => d.category === 'MONEY');
+                    const totalDonationAmount = moneyDonations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+                    
+                    const uniqueNgos = new Set();
+                    moneyDonations.forEach(d => {
+                      if (d.recipientNgoId) uniqueNgos.add(d.recipientNgoId);
+                      else if (d.ngoId) uniqueNgos.add(d.ngoId);
+                    });
+                    const totalUniqueNgos = uniqueNgos.size;
+
+                    const uniqueDonors = new Set();
+                    moneyDonations.forEach(d => {
+                      if (d.donorId) uniqueDonors.add(d.donorId);
+                    });
+                    const totalUniqueDonors = uniqueDonors.size;
+
+                    return (
+                      <div className="flex flex-col gap-6 reveal">
+                        <div className={`border rounded-2xl p-6 ${cardBg}`}>
+                          <h3 className={`font-['Poppins'] font-bold text-lg mb-4 flex items-center gap-2 ${textTitle}`}>
+                            <Heart size={16} className="text-[#3D6A53]" />
+                            <span>Monetary Donation Transactions</span>
+                          </h3>
+
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                              <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Transactions</span>
+                              <p className={`text-xl font-extrabold mt-1 font-mono ${textTitle}`}>{moneyDonations.length}</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                              <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Funds Received</span>
+                              <p className="text-xl font-extrabold mt-1 font-mono text-[#43E97B]">₹{totalDonationAmount.toLocaleString()}</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                              <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Active NGOs</span>
+                              <p className={`text-xl font-extrabold mt-1 font-mono ${textTitle}`}>{totalUniqueNgos}</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                              <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Direct Donors</span>
+                              <p className={`text-xl font-extrabold mt-1 font-mono ${textTitle}`}>{totalUniqueDonors}</p>
+                            </div>
+                          </div>
+
+                          {/* Transactions Table */}
+                          {moneyDonations.length === 0 ? (
+                            <p className={`text-sm text-center py-10 ${textMuted}`}>No monetary transaction records found.</p>
+                          ) : (
+                            <div className="overflow-x-auto w-full">
+                              <table className="w-full border-collapse text-left text-xs">
+                                <thead>
+                                  <tr className={`border-b ${isDark ? 'border-white/5' : 'border-gray-200'} ${textMuted} font-bold`}>
+                                    <th className="py-3 px-4">Donor Name</th>
+                                    <th className="py-3 px-4">NGO Recipient</th>
+                                    <th className="py-3 px-4">Amount</th>
+                                    <th className="py-3 px-4">Payment UTR</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4">Date</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {moneyDonations.map(d => (
+                                    <tr key={d.id} className={`border-b ${isDark ? 'border-white/5 hover:bg-white/[0.02]' : 'border-gray-100 hover:bg-gray-50/50'} transition-all`}>
+                                      <td className={`py-3.5 px-4 font-semibold ${textTitle}`}>{d.donor?.name || d.donorNgo?.name || 'Anonymous'}</td>
+                                      <td className={`py-3.5 px-4 font-semibold ${textTitle}`}>{d.recipientNgo?.name || 'Helping Hands'}</td>
+                                      <td className="py-3.5 px-4 font-mono font-bold text-[#43E97B]">₹{Number(d.amount).toLocaleString()}</td>
+                                      <td className={`py-3.5 px-4 font-mono text-[10px] ${textMuted}`}>{d.transactionId || 'N/A'}</td>
+                                      <td className="py-3.5 px-4">
+                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                          d.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-400'
+                                          }`}>
+                                          {d.status}
+                                        </span>
+                                      </td>
+                                      <td className={`py-3.5 px-4 font-mono text-[10px] ${textMuted}`}>
+                                        {d.transactionDate ? new Date(d.transactionDate).toLocaleDateString() : new Date(d.createdAt).toLocaleDateString()}
+                                      </td>
+                                      <td className="py-3.5 px-4 text-right">
+                                        <button onClick={() => handleDeleteOperation('donation', d.id)} className="p-1.5 text-red-400 bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 rounded-lg" title="Discard/Delete transaction">
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>

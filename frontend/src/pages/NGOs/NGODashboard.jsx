@@ -36,7 +36,9 @@ export default function NGODashboard() {
     name: '', phoneNumber: '', location: '', photoUrl: '',
     registrationNumber: '', areaOfWork: 'Animal Welfare', description: '',
     achievements: '', workDone: '', latitude: null, longitude: null,
-    upiId: '', websiteUrl: ''
+    upiId: '', websiteUrl: '',
+    bankName: '', accountHolder: '', accountNumber: '', ifsc: '',
+    virtualBalance: 0
   })
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -75,7 +77,12 @@ export default function NGODashboard() {
         latitude: profile.latitude || null,
         longitude: profile.longitude || null,
         upiId: profile.upiId || '',
-        websiteUrl: profile.websiteUrl || ''
+        websiteUrl: profile.websiteUrl || '',
+        bankName: profile.bankName || '',
+        accountHolder: profile.accountHolder || '',
+        accountNumber: profile.accountNumber || '',
+        ifsc: profile.ifsc || '',
+        virtualBalance: profile.virtualBalance || 0
       })
 
       // 2. Fetch Organized Campaigns
@@ -319,17 +326,18 @@ export default function NGODashboard() {
           )}
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             {[
               { label: 'Pending Donations', val: pendingDonations, icon: <HeartHandshake size={20} />, color: '#13221B' },
               { label: 'Active Rescues Claims', val: claimedRescues, icon: <Shield size={20} />, color: '#3D6A53' },
               { label: 'Active Campaigns', val: campaigns.length, icon: <Calendar size={20} />, color: '#43E97B' },
-              { label: 'Community Posts', val: posts.length, icon: <FileText size={20} />, color: '#FFB347' }
+              { label: 'Community Posts', val: posts.length, icon: <FileText size={20} />, color: '#FFB347' },
+              { label: 'Total Funds Received', val: `₹${Number(profileForm.virtualBalance || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: '#2E7D59' }
             ].map((metric, i) => (
               <div key={i} className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${cardBg}`}>
                 <div>
                   <span className={`text-[10px] uppercase font-extrabold tracking-wider ${textMuted}`}>{metric.label}</span>
-                  <p className={`text-2xl font-black font-mono mt-1 ${textTitle}`}>{metric.val}</p>
+                  <p className={`text-xl font-black font-mono mt-1 ${textTitle}`}>{metric.val}</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#13221B] to-[#3D6A53] flex items-center justify-center text-white shrink-0">
                   {metric.icon}
@@ -479,6 +487,34 @@ export default function NGODashboard() {
                             </div>
                           </div>
 
+                          {/* NGO Bank Settlement Details */}
+                          <div className="border-t pt-4 dark:border-white/5 flex flex-col gap-3">
+                            <h4 className={`text-sm font-bold flex items-center gap-1.5 ${textTitle}`}>
+                              <Building size={14} className="text-[#3D6A53]" />
+                              <span>Bank Settlement Details (Demo/Test Mode)</span>
+                            </h4>
+                            <div className="grid sm:grid-cols-2 gap-4">
+                              <div className="flex flex-col gap-1.5">
+                                <label className={`text-xs font-bold ${textMuted}`}>Account Holder Name</label>
+                                <input value={profileForm.accountHolder} onChange={e => setProfileForm({ ...profileForm, accountHolder: e.target.value })} placeholder="e.g. NGO Trust Name" className={inputClass} />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className={`text-xs font-bold ${textMuted}`}>Bank Name</label>
+                                <input value={profileForm.bankName} onChange={e => setProfileForm({ ...profileForm, bankName: e.target.value })} placeholder="e.g. State Bank of India" className={inputClass} />
+                              </div>
+                            </div>
+                            <div className="grid sm:grid-cols-2 gap-4">
+                              <div className="flex flex-col gap-1.5">
+                                <label className={`text-xs font-bold ${textMuted}`}>Account Number</label>
+                                <input value={profileForm.accountNumber} onChange={e => setProfileForm({ ...profileForm, accountNumber: e.target.value })} placeholder="e.g. 123456789012" className={inputClass} />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className={`text-xs font-bold ${textMuted}`}>IFSC Code</label>
+                                <input value={profileForm.ifsc} onChange={e => setProfileForm({ ...profileForm, ifsc: e.target.value })} placeholder="e.g. SBIN0001234" className={inputClass} />
+                              </div>
+                            </div>
+                          </div>
+
                           {profileSuccess && (
                             <p className="text-[#43E97B] text-xs font-bold flex items-center gap-1.5">
                               <CheckCircle size={13} /> NGO Details updated successfully!
@@ -616,90 +652,134 @@ export default function NGODashboard() {
                   )}
 
                   {/* DONATIONS TAB */}
-                  {activeTab === 'donations' && (
-                    <div className={`border rounded-2xl p-6 ${cardBg} reveal`}>
-                      <h3 className={`font-['Poppins'] font-bold text-lg mb-4 flex items-center gap-2 ${textTitle}`}>
-                        <HeartHandshake size={16} className="text-[#3D6A53]" />
-                        <span>Donations Received</span>
-                      </h3>
+                  {activeTab === 'donations' && (() => {
+                    const totalDonationsCount = donations.length;
+                    const completedMoneyDonations = donations.filter(d => d.category === 'MONEY' && d.status === 'DELIVERED');
+                    const totalAmountReceived = completedMoneyDonations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+                    
+                    const uniqueDonorsSet = new Set();
+                    donations.forEach(d => {
+                      if (d.donorId) uniqueDonorsSet.add(d.donorId);
+                      else if (d.donorNgoId) uniqueDonorsSet.add(d.donorNgoId);
+                      else uniqueDonorsSet.add(d.id);
+                    });
+                    const totalUniqueDonors = uniqueDonorsSet.size;
+                    const virtualBalanceVal = profileForm.virtualBalance || 0;
 
-                      {donations.length === 0 ? (
-                        <p className={`text-sm text-center py-10 ${textMuted}`}>No donations received yet.</p>
-                      ) : (
-                        <div className="flex flex-col gap-4">
-                          {donations.map(d => (
-                            <div key={d.id} className={`p-4 rounded-xl border flex flex-col gap-3 ${isDark ? 'bg-white/[0.01] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                              <div className="flex justify-between items-start gap-2 flex-wrap">
-                                <div>
-                                  <h4 className={`font-semibold text-sm ${textTitle}`}>{d.title || `${d.category} Donation`}</h4>
-                                  <p className={`text-[10px] ${textMuted}`}>
-                                    Donor: <strong className={textTitle}>{d.donor?.name || d.donorNgo?.name || 'Anonymous'}</strong>
-                                    {(d.donor?.phoneNumber || d.donorNgo?.phoneNumber) && (
-                                      <span className="ml-1.5">
-                                        ( <strong className={textTitle}>{d.donor?.phoneNumber || d.donorNgo?.phoneNumber}</strong>)
-                                      </span>
-                                    )}
-                                  </p>
+                    return (
+                      <div className={`border rounded-2xl p-6 ${cardBg} reveal`}>
+                        <h3 className={`font-['Poppins'] font-bold text-lg mb-4 flex items-center gap-2 ${textTitle}`}>
+                          <HeartHandshake size={16} className="text-[#3D6A53]" />
+                          <span>Donations Received</span>
+                        </h3>
+
+                        {/* Donations Statistics Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Received</span>
+                            <p className={`text-xl font-extrabold mt-1 font-mono ${textTitle}`}>{totalDonationsCount}</p>
+                          </div>
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Amount Received</span>
+                            <p className="text-xl font-extrabold mt-1 font-mono text-[#43E97B]">₹{totalAmountReceived.toLocaleString()}</p>
+                          </div>
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Unique Donors</span>
+                            <p className={`text-xl font-extrabold mt-1 font-mono ${textTitle}`}>{totalUniqueDonors}</p>
+                          </div>
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Virtual Balance</span>
+                            <p className="text-xl font-extrabold mt-1 font-mono text-[#2E7D59]">₹{Number(virtualBalanceVal).toLocaleString()}</p>
+                          </div>
+                        </div>
+
+                        {donations.length === 0 ? (
+                          <p className={`text-sm text-center py-10 ${textMuted}`}>No donations received yet.</p>
+                        ) : (
+                          <div className="flex flex-col gap-4">
+                            {donations.map(d => (
+                              <div key={d.id} className={`p-4 rounded-xl border flex flex-col gap-3 ${isDark ? 'bg-white/[0.01] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                                <div className="flex justify-between items-start gap-2 flex-wrap">
+                                  <div>
+                                    <h4 className={`font-semibold text-sm ${textTitle}`}>{d.title || `${d.category} Donation`}</h4>
+                                    <p className={`text-[10px] ${textMuted}`}>
+                                      Donor: <strong className={textTitle}>{d.donor?.name || d.donorNgo?.name || 'Anonymous'}</strong>
+                                      {(d.donor?.phoneNumber || d.donorNgo?.phoneNumber) && (
+                                        <span className="ml-1.5">
+                                          ( <strong className={textTitle}>{d.donor?.phoneNumber || d.donorNgo?.phoneNumber}</strong>)
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                    d.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
+                                    }`}>
+                                    {d.status}
+                                  </span>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${d.status === 'DELIVERED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
-                                  d.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-blue-500/10 text-blue-400'
-                                  }`}>
-                                  {d.status}
-                                </span>
-                              </div>
 
-                              <p className={`text-xs ${textTitle}`}><strong>Description/Details:</strong> {d.description}</p>
+                                <p className={`text-xs ${textTitle}`}><strong>Description/Details:</strong> {d.description}</p>
 
-                              <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
-                                <span> Category: <strong className={textTitle}>{d.category}</strong></span>
-                                <span> Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
-                                {d.location && <span className="sm:col-span-2"> Location: <strong className={textTitle}>{d.location}</strong></span>}
-                                {d.pickupAddress && <span className="sm:col-span-2"> Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
-                              </div>
-
-                              {/* Status updating actions */}
-                              <div className="flex flex-wrap gap-2 justify-end mt-1">
-                                {(d.status !== 'DELIVERED' && d.status !== 'CANCELLED') && (d.location || d.pickupAddress) && (
-                                  <a
-                                    href={d.latitude && d.longitude
-                                      ? `https://www.google.com/maps/dir/?api=1&destination=${d.latitude},${d.longitude}`
-                                      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(d.pickupAddress || d.location)}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-3.5 py-1.5 rounded-lg bg-[#3D6A53] hover:bg-[#2E7D59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer mr-auto"
-                                  >
-                                    <Navigation size={11} /> Get Directions
-                                  </a>
-                                )}
-                                {d.status === 'PENDING' && (
-                                  <button onClick={() => handleUpdateDonationStatus(d.id, 'ACCEPTED')} className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-[#2E7D59] hover:bg-green-500/20 text-[11px] font-bold">Accept Request</button>
-                                )}
-                                {d.status === 'ACCEPTED' && d.pickupType !== 'VOLUNTEER' && (
-                                  <button onClick={() => handleUpdateDonationStatus(d.id, 'PICKED_UP')} className="px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20 text-[11px] font-bold">Mark Picked Up</button>
-                                )}
-                                {d.status === 'ACCEPTED' && d.pickupType === 'VOLUNTEER' && (
-                                  <div className="flex items-center gap-3">
-                                    <span className="px-2.5 py-1.5 text-[11px] font-mono font-bold bg-[#13221B]/15 text-[#2E7D59] rounded-lg">Share OTP: {d.otp}</span>
-                                    {!d.reachedDonor ? (
-                                      <button onClick={() => handleNotifyReached(d.id)} className="px-3 py-1.5 rounded-lg bg-[#13221B] text-white hover:bg-[#3D6A53] text-[11px] font-bold">Notify Reached</button>
-                                    ) : (
-                                      <span className="px-3 py-1.5 text-[11px] font-bold text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">Reached Donor</span>
-                                    )}
+                                {d.category === 'MONEY' ? (
+                                  <div className={`grid sm:grid-cols-3 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
+                                    <span>Amount: <strong className="text-[#43E97B] font-mono">₹{d.amount}</strong></span>
+                                    <span className="sm:col-span-2">Transaction ID / UTR: <strong className={`font-mono ${textTitle}`}>{d.transactionId || 'N/A'}</strong></span>
+                                    <span>Date: <strong className={textTitle}>{d.transactionDate ? new Date(d.transactionDate).toLocaleDateString() : new Date(d.createdAt).toLocaleDateString()}</strong></span>
+                                    <span className="sm:col-span-2">Payment Status: <strong className={textTitle}>{d.status}</strong></span>
+                                  </div>
+                                ) : (
+                                  <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
+                                    <span> Category: <strong className={textTitle}>{d.category}</strong></span>
+                                    <span> Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
+                                    {d.location && <span className="sm:col-span-2"> Location: <strong className={textTitle}>{d.location}</strong></span>}
+                                    {d.pickupAddress && <span className="sm:col-span-2"> Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
                                   </div>
                                 )}
-                                {(d.status === 'ACCEPTED' || d.status === 'PICKED_UP') && (
-                                  <button onClick={() => handleUpdateDonationStatus(d.id, 'DELIVERED')} className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 text-[11px] font-bold">Mark Delivered</button>
-                                )}
-                                {d.status !== 'DELIVERED' && d.status !== 'CANCELLED' && (
-                                  <button onClick={() => handleUpdateDonationStatus(d.id, 'CANCELLED')} className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-[11px] font-bold">Cancel Donation</button>
-                                )}
+
+                                {/* Status updating actions */}
+                                <div className="flex flex-wrap gap-2 justify-end mt-1">
+                                  {(d.status !== 'DELIVERED' && d.status !== 'CANCELLED') && (d.location || d.pickupAddress) && (
+                                    <a
+                                      href={d.latitude && d.longitude
+                                        ? `https://www.google.com/maps/dir/?api=1&destination=${d.latitude},${d.longitude}`
+                                        : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(d.pickupAddress || d.location)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-3.5 py-1.5 rounded-lg bg-[#3D6A53] hover:bg-[#2E7D59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer mr-auto"
+                                    >
+                                      <Navigation size={11} /> Get Directions
+                                    </a>
+                                  )}
+                                  {d.status === 'PENDING' && (
+                                    <button onClick={() => handleUpdateDonationStatus(d.id, 'ACCEPTED')} className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-[#2E7D59] hover:bg-green-500/20 text-[11px] font-bold">Accept Request</button>
+                                  )}
+                                  {d.status === 'ACCEPTED' && d.pickupType !== 'VOLUNTEER' && (
+                                    <button onClick={() => handleUpdateDonationStatus(d.id, 'PICKED_UP')} className="px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20 text-[11px] font-bold">Mark Picked Up</button>
+                                  )}
+                                  {d.status === 'ACCEPTED' && d.pickupType === 'VOLUNTEER' && (
+                                    <div className="flex items-center gap-3">
+                                      <span className="px-2.5 py-1.5 text-[11px] font-mono font-bold bg-[#13221B]/15 text-[#2E7D59] rounded-lg">Share OTP: {d.otp}</span>
+                                      {!d.reachedDonor ? (
+                                        <button onClick={() => handleNotifyReached(d.id)} className="px-3 py-1.5 rounded-lg bg-[#13221B] text-white hover:bg-[#3D6A53] text-[11px] font-bold">Notify Reached</button>
+                                      ) : (
+                                        <span className="px-3 py-1.5 text-[11px] font-bold text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">Reached Donor</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {(d.status === 'ACCEPTED' || d.status === 'PICKED_UP') && (
+                                    <button onClick={() => handleUpdateDonationStatus(d.id, 'DELIVERED')} className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 text-[11px] font-bold">Mark Delivered</button>
+                                  )}
+                                  {d.status !== 'DELIVERED' && d.status !== 'CANCELLED' && (
+                                    <button onClick={() => handleUpdateDonationStatus(d.id, 'CANCELLED')} className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-[11px] font-bold">Cancel Donation</button>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* UPDATES / POSTS TAB */}
                   {activeTab === 'posts' && (

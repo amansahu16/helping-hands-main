@@ -165,6 +165,23 @@ export default function DonateToNGO() {
   const [successPayload, setSuccessPayload] = useState(null)
   const [error, setError] = useState('')
   const [userTxnId, setUserTxnId] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+  const [utrError, setUtrError] = useState('')
+  const [toast, setToast] = useState('')
+
+  useEffect(() => {
+    const checkDevice = () => {
+      setIsMobile(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+    }
+    checkDevice()
+    window.addEventListener('resize', checkDevice)
+    return () => window.removeEventListener('resize', checkDevice)
+  }, [])
+
+  const triggerToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
 
   useEffect(() => {
     if (urlNgoId) {
@@ -367,12 +384,29 @@ export default function DonateToNGO() {
     document.body.removeChild(link)
   }
 
+  const validateUTR = (val) => {
+    if (!val) {
+      setUtrError('Please enter your UTR / Transaction ID after completing the payment.')
+      return false
+    }
+    if (val.length < 8 || val.length > 30) {
+      setUtrError('UTR must be between 8 and 30 characters.')
+      return false
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(val)) {
+      setUtrError('UTR must only contain alphanumeric characters.')
+      return false
+    }
+    setUtrError('')
+    return true
+  }
+
   const submitMoneyDonation = async () => {
     setLoading(true)
     setError('')
     try {
       const finalAmount = form.amount === 'Custom' ? form.customAmount : form.amount
-      const transactionId = userTxnId.trim() || `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`
+      const transactionId = userTxnId.trim()
 
       await api.post('/donations', {
         title: `Monetary Donation to ${selectedNgo?.name || 'NGO'}`,
@@ -415,11 +449,11 @@ export default function DonateToNGO() {
   const handleDonateInit = (e) => {
     e.preventDefault()
     if (!user) {
-      setError(t.common.submit === 'Please login to donate to an NGO.')
+      setError('Please login to donate to an NGO.')
       return
     }
     if (!form.ngoId) {
-      setError(t.common.submit === 'Please select an NGO.')
+      setError('Please select an NGO.')
       return
     }
 
@@ -429,6 +463,11 @@ export default function DonateToNGO() {
         setError('Please select or enter a valid donation amount.')
         return
       }
+      if (!validateUTR(userTxnId)) {
+        setError('Please enter a valid UTR / Transaction ID after completing the payment.')
+        return
+      }
+      setError('')
       submitMoneyDonation()
     } else {
       // Direct Goods Donation Submit
@@ -726,37 +765,97 @@ export default function DonateToNGO() {
                       )}
 
                       {/* UPI DYNAMIC QR CODE INLINE */}
-                      {form.ngoId && (form.amount !== 'Custom' || (form.customAmount && parseFloat(form.customAmount) > 0)) && (
-                        <div className="mt-4 p-5 rounded-2xl border flex flex-col items-center gap-4 bg-gray dark:bg-[#16163w]/60 border-dashed border-[#13221B]/25">
-                          <div className="text-center">
-                            <p className={`text-xs font-bold ${heroText}`}>UPI Scan & Pay</p>
-                            <p className={`text-[10px] ${mutedText} mt-0.5`}>Direct transfer to {selectedNgo?.name}</p>
+                      {form.ngoId && (form.amount !== 'Custom' || (form.customAmount && parseFloat(form.customAmount) > 0)) && (() => {
+                        const finalAmount = form.amount === 'Custom' ? form.customAmount : form.amount
+                        const upiId = selectedNgo?.upiId || 'helpinghands@upi'
+                        const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(selectedNgo?.name || 'Helping Hands')}&am=${finalAmount}&cu=INR`
+                        
+                        return (
+                          <div className="mt-4 p-5 rounded-2xl border flex flex-col items-center gap-4 bg-gray dark:bg-[#16163A]/60 border-dashed border-[#13221B]/25">
+                            <div className="text-center">
+                              <p className={`text-xs font-bold ${heroText}`}>UPI Payment Option</p>
+                              <p className={`text-[10px] ${mutedText} mt-0.5`}>Direct transfer to {selectedNgo?.name}</p>
+                            </div>
+
+                            {/* Device specific display */}
+                            {isMobile ? (
+                              <a
+                                href={upiUrl}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white font-bold text-xs hover:shadow-md transition-all text-center flex items-center justify-center gap-2"
+                              >
+                                Open UPI App
+                              </a>
+                            ) : (
+                              <div className="p-3 bg-white rounded-xl border shadow-inner flex flex-col items-center">
+                                <img
+                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiUrl)}`}
+                                  alt="UPI QR Code"
+                                  className="w-[160px] h-[160px]"
+                                />
+                                <span className={`text-[9px] ${mutedText} mt-2`}>Scan using GPay, PhonePe, Paytm, BHIM, etc.</span>
+                              </div>
+                            )}
+
+                            {/* Clickable UPI ID */}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span 
+                                onClick={() => {
+                                  if (isMobile) {
+                                    window.location.href = upiUrl
+                                  } else {
+                                    navigator.clipboard.writeText(upiId)
+                                    triggerToast('UPI ID copied successfully.')
+                                  }
+                                }}
+                                className="text-xs font-mono cursor-pointer hover:underline text-[#2E7D59] font-bold flex items-center gap-1.5"
+                                title={isMobile ? "Click to Open UPI App" : "Click to Copy UPI ID"}
+                              >
+                                UPI ID: {upiId}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(upiId)
+                                  triggerToast('UPI ID copied successfully.')
+                                }}
+                                className="p-1 rounded bg-[#13221B]/10 hover:bg-[#13221B]/20 text-[#2E7D59]"
+                                title="Copy UPI ID"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            {/* User Guidance Alert */}
+                            <div className="w-full p-3.5 rounded-xl bg-[#43E97B]/10 border border-[#43E97B]/25 text-left">
+                              <p className={`text-[11px] leading-relaxed font-semibold ${isDark ? 'text-[#43E97B]' : 'text-[#1E1B4B]'}`}>
+                                Complete the payment using the QR code or UPI app. After payment, enter your UTR/Transaction ID to verify your donation.
+                              </p>
+                            </div>
+
+                            {/* UTR Input */}
+                            <div className="w-full flex flex-col gap-1.5 text-left">
+                              <label className={labelClass}>Transaction Ref / UTR Number *</label>
+                              <input
+                                type="text"
+                                name="userTxnId"
+                                value={userTxnId}
+                                onChange={(e) => {
+                                  setUserTxnId(e.target.value)
+                                  validateUTR(e.target.value)
+                                }}
+                                placeholder="Enter 12-digit UTR or Transaction ID"
+                                className={`${inputClass} ${utrError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                required
+                              />
+                              {utrError && (
+                                <p className="text-[10px] text-red-400 font-semibold">{utrError}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="p-3 bg-white rounded-xl border shadow-inner">
-                            <img
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                                `upi://pay?pa=${selectedNgo?.upiId || 'helpinghands@upi'}&pn=${encodeURIComponent(selectedNgo?.name || 'Helping Hands')}&am=${form.amount === 'Custom' ? form.customAmount : form.amount}&cu=INR`
-                              )}`}
-                              alt="UPI QR Code"
-                              className="w-[160px] h-[160px]"
-                            />
-                          </div>
-                          <p className="text-[10px] font-mono text-center" style={{ color: isDark ? '#BBBBD8' : '#13221B' }}>
-                            UPI ID: <strong className="font-bold">{selectedNgo?.upiId || 'helpinghands@upi'}</strong>
-                          </p>
-                          <div className="w-full flex flex-col gap-1.5">
-                            <label className={labelClass}>Transaction Ref / UTR Number (Optional)</label>
-                            <input
-                              type="text"
-                              name="userTxnId"
-                              value={userTxnId}
-                              onChange={e => setUserTxnId(e.target.value)}
-                              placeholder="Enter UTR / Txn number to verify"
-                              className={inputClass}
-                            />
-                          </div>
-                        </div>
-                      )}
+                        )
+                      })()}
                     </div>
                   )}
 
@@ -1007,7 +1106,13 @@ export default function DonateToNGO() {
         </div>
       </section>
 
-
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl bg-[#2E7D59] text-white text-xs font-bold shadow-lg flex items-center gap-2 transition-all duration-300">
+          <CheckCircle size={16} />
+          <span>{toast}</span>
+        </div>
+      )}
     </div>
   )
 }

@@ -14,6 +14,24 @@ const connectDB = async () => {
         await pool.query("SELECT 1");
         console.log("\n PostgreSQL connected !!");
 
+        // Ensure new payment fields exist in donations table and bank details in ngos table
+        await pool.query(`
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS payment_status VARCHAR(30) DEFAULT 'PENDING';
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS settlement_status VARCHAR(50) DEFAULT 'SIMULATED_SUCCESS';
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS razorpay_order_id VARCHAR(100);
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS razorpay_payment_id VARCHAR(100);
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS payment_date TIMESTAMP;
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL;
+            ALTER TABLE donations ADD COLUMN IF NOT EXISTS transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE ngos ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
+            ALTER TABLE ngos ADD COLUMN IF NOT EXISTS account_holder VARCHAR(150);
+            ALTER TABLE ngos ADD COLUMN IF NOT EXISTS account_number VARCHAR(50);
+            ALTER TABLE ngos ADD COLUMN IF NOT EXISTS ifsc VARCHAR(20);
+            ALTER TABLE ngos ADD COLUMN IF NOT EXISTS virtual_balance NUMERIC(12, 2) DEFAULT 0;
+        `);
+        console.log("Database schema columns checked and updated successfully.");
+
         // Verify if tables are initialized. If not, auto-execute schema.sql
         const tableCheck = await pool.query(
             "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users')"

@@ -73,7 +73,7 @@ async function getMyProfile(req, res) {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone_number, registration_number, location, photo_url,
               verified, otp_verified, created_at, area_of_work, description, achievements, work_done,
-              upi_id, website_url
+              upi_id, website_url, bank_name, account_holder, account_number, ifsc, virtual_balance
        FROM ngos WHERE id = $1`,
       [req.user.id]
     );
@@ -86,7 +86,7 @@ async function getMyProfile(req, res) {
  
 async function updateMyProfile(req, res) {
   try {
-    const { name, phoneNumber, location, photoUrl, registrationNumber, areaOfWork, description, achievements, workDone, upiId, websiteUrl } = req.body;
+    const { name, phoneNumber, location, photoUrl, registrationNumber, areaOfWork, description, achievements, workDone, upiId, websiteUrl, bankName, accountHolder, accountNumber, ifsc } = req.body;
     
     let finalPhotoUrl = photoUrl;
     if (photoUrl && photoUrl.startsWith("data:")) {
@@ -109,6 +109,10 @@ async function updateMyProfile(req, res) {
       work_done: workDone,
       upi_id: upiId,
       website_url: websiteUrl,
+      bank_name: bankName,
+      account_holder: accountHolder,
+      account_number: accountNumber,
+      ifsc: ifsc,
     };
 
     for (const [key, value] of Object.entries(fields)) {
@@ -122,7 +126,7 @@ async function updateMyProfile(req, res) {
     if (updates.length === 0) {
       const { rows } = await pool.query(
         `SELECT id, name, email, photo_url, phone_number, location, registration_number,
-                area_of_work, description, achievements, work_done, upi_id, website_url
+                area_of_work, description, achievements, work_done, upi_id, website_url, bank_name, account_holder, account_number, ifsc, virtual_balance
          FROM ngos WHERE id = $1`,
         [req.user.id]
       );
@@ -135,7 +139,7 @@ async function updateMyProfile(req, res) {
       SET ${updates.join(", ")} 
       WHERE id = $${paramIndex} 
       RETURNING id, name, email, photo_url, phone_number, location, registration_number,
-                area_of_work, description, achievements, work_done, upi_id, website_url
+                area_of_work, description, achievements, work_done, upi_id, website_url, bank_name, account_holder, account_number, ifsc, virtual_balance
     `;
     const { rows } = await pool.query(queryText, params);
     const updated = mapRowKeys(rows[0]);

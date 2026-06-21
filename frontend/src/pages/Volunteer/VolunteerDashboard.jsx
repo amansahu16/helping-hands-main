@@ -54,6 +54,12 @@ export default function VolunteerDashboard() {
   const [myAdoptions, setMyAdoptions] = useState([])
   const [enteredOtps, setEnteredOtps] = useState({})
   const [verifyingOtp, setVerifyingOtp] = useState({})
+  const [donationStats, setDonationStats] = useState({
+    totalDonations: 0,
+    totalAmount: 0,
+    ngoSummary: [],
+    recent: []
+  })
 
   // Leaderboard / Volunteer points state
   const [points, setPoints] = useState(0)
@@ -96,6 +102,14 @@ export default function VolunteerDashboard() {
       // 2. Fetch Donations
       const { data: donations } = await api.get('/users/donations')
       setMyDonations(donations || [])
+
+      // Fetch User Donation Stats
+      try {
+        const { data: stats } = await api.get('/users/donations/stats')
+        setDonationStats(stats || { totalDonations: 0, totalAmount: 0, ngoSummary: [], recent: [] })
+      } catch (statsErr) {
+        console.error('Failed to load user donation stats:', statsErr)
+      }
 
       // 3. Fetch Adoptions
       const { data: adoptions } = await api.get('/users/adoptions')
@@ -979,6 +993,41 @@ export default function VolunteerDashboard() {
                         </Link>
                       </div>
 
+                      {/* Donation Stats Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className={`p-4 rounded-xl border flex flex-col justify-between ${cardBg}`}>
+                          <div>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Donations Made</span>
+                            <p className={`text-xl font-extrabold mt-1 font-mono ${textTitle}`}>{donationStats.totalDonations}</p>
+                          </div>
+                          <p className={`text-[9px] ${textMuted} mt-1.5`}>Completed & pending monetary donations</p>
+                        </div>
+                        <div className={`p-4 rounded-xl border flex flex-col justify-between ${cardBg}`}>
+                          <div>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>Total Amount Donated</span>
+                            <p className="text-xl font-extrabold mt-1 font-mono text-[#43E97B]">₹{Number(donationStats.totalAmount || 0).toLocaleString()}</p>
+                          </div>
+                          <p className={`text-[9px] ${textMuted} mt-1.5`}>Direct monetary contributions</p>
+                        </div>
+                        <div className={`p-4 rounded-xl border flex flex-col justify-between ${cardBg}`}>
+                          <div>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${textMuted}`}>NGO-Wise Summary</span>
+                            <div className="flex flex-col gap-1 mt-1.5 max-h-[50px] overflow-y-auto pr-1">
+                              {donationStats.ngoSummary && donationStats.ngoSummary.length > 0 ? (
+                                donationStats.ngoSummary.map((sum, index) => (
+                                  <div key={index} className="flex justify-between items-center text-[9px] font-semibold">
+                                    <span className="truncate max-w-[120px]">{sum.ngoName}</span>
+                                    <span className="text-[#43E97B]">₹{sum.totalAmount}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-[9px] italic">No organization summary available.</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {myDonations.length === 0 ? (
                         <p className={`text-sm text-center py-10 ${textMuted}`}>You haven't listed any donations yet.</p>
                       ) : (
@@ -1005,6 +1054,9 @@ export default function VolunteerDashboard() {
                                   <span>Quantity: <strong className={textTitle}>{d.quantity || 1}</strong></span>
                                 )}
                                 <span>Location: <strong className={textTitle}>{d.location || 'N/A'}</strong></span>
+                                {d.category === 'MONEY' && d.transactionId && (
+                                  <span className="sm:col-span-3">Transaction ID / UTR: <strong className={`font-mono ${textTitle}`}>{d.transactionId}</strong></span>
+                                )}
                                 {d.pickupAddress && <span className="sm:col-span-3"> Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
                               </div>
 

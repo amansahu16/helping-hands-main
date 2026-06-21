@@ -3,6 +3,16 @@
 import pool, { mapRowKeys, mapRows } from "../config/db.js";
 import crypto from "crypto";
 
+// 15-second in-memory caches for stats to prevent DB pool exhaustion
+let statsCache = null;
+let statsCacheTime = 0;
+
+let animalStatsCache = null;
+let animalStatsCacheTime = 0;
+
+let leaderboardCache = null;
+let leaderboardCacheTime = 0;
+
 // ── FAQs ─────────────────────────────────────────────────────
 
 async function listFaqs(req, res) {
@@ -158,6 +168,11 @@ async function getLocationById(req, res) {
 
 async function getStats(req, res) {
   try {
+    const now = Date.now();
+    if (statsCache && (now - statsCacheTime < 15000)) {
+      return res.json(statsCache);
+    }
+
     const queryHelper = async (queryText, params = []) => {
       try {
         const res = await pool.query(queryText, params);
@@ -174,7 +189,7 @@ async function getStats(req, res) {
       queryHelper("SELECT COUNT(*)::int AS count FROM users")
     ]);
 
-    return res.json({
+    const result = {
       success: true,
       data: {
         donations: donationsCount,
@@ -182,7 +197,11 @@ async function getStats(req, res) {
         ngos: ngosCount,
         volunteers: volunteersCount,
       },
-    });
+    };
+
+    statsCache = result;
+    statsCacheTime = now;
+    return res.json(result);
   } catch (err) {
     console.error("Failed to query stats from DB:", err.message);
     return res.json({
@@ -199,18 +218,45 @@ async function getStats(req, res) {
 
 async function getLeaderboard(req, res) {
   try {
-    const { rows } = await pool.query(`
+    const now = Date.now();
+    if (leaderboardCache && (now - leaderboardCacheTime < 15000)) {
+      return res.json(leaderboardCache);
+    }
+
+    const queryText = `
+      WITH campaign_counts AS (
+        SELECT organizer_user_id AS user_id, COUNT(*)::int AS count FROM campaigns GROUP BY organizer_user_id
+      ),
+      participant_counts AS (
+        SELECT user_id, COUNT(*)::int AS count FROM campaign_participants GROUP BY user_id
+      ),
+      donation_counts AS (
+        SELECT donor_id AS user_id, COUNT(*)::int AS count FROM donations GROUP BY donor_id
+      ),
+      rescue_counts AS (
+        SELECT reporter_id AS user_id, COUNT(*)::int AS count FROM rescue_requests GROUP BY reporter_id
+      ),
+      adoption_counts AS (
+        SELECT adopter_id AS user_id, COUNT(*)::int AS count FROM adoptions GROUP BY adopter_id
+      )
       SELECT 
         u.id, 
         u.name, 
         u.photo_url,
-        (SELECT COUNT(*)::int FROM campaigns WHERE organizer_user_id = u.id) AS "campaignsOrganized",
-        (SELECT COUNT(*)::int FROM campaign_participants WHERE user_id = u.id) AS "campaignsJoined",
-        (SELECT COUNT(*)::int FROM donations WHERE donor_id = u.id) AS "donationsCount",
-        (SELECT COUNT(*)::int FROM rescue_requests WHERE reporter_id = u.id) AS "rescueRequestsCount",
-        (SELECT COUNT(*)::int FROM adoptions WHERE adopter_id = u.id) AS "adoptionsCount"
+        COALESCE(cc.count, 0) AS "campaignsOrganized",
+        COALESCE(pc.count, 0) AS "campaignsJoined",
+        COALESCE(dc.count, 0) AS "donationsCount",
+        COALESCE(rc.count, 0) AS "rescueRequestsCount",
+        COALESCE(ac.count, 0) AS "adoptionsCount"
       FROM users u
-    `);
+      LEFT JOIN campaign_counts cc ON u.id = cc.user_id
+      LEFT JOIN participant_counts pc ON u.id = pc.user_id
+      LEFT JOIN donation_counts dc ON u.id = dc.user_id
+      LEFT JOIN rescue_counts rc ON u.id = rc.user_id
+      LEFT JOIN adoption_counts ac ON u.id = ac.user_id
+    `;
+
+    const { rows } = await pool.query(queryText);
 
     const leaderboard = rows.map(user => {
       const organized = user.campaignsOrganized || 0;
@@ -231,6 +277,8 @@ async function getLeaderboard(req, res) {
       .sort((a, b) => b.points - a.points)
       .slice(0, 10);
 
+    leaderboardCache = leaderboard;
+    leaderboardCacheTime = now;
     return res.json(leaderboard);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -239,6 +287,11 @@ async function getLeaderboard(req, res) {
 
 async function getAnimalStats(req, res) {
   try {
+    const now = Date.now();
+    if (animalStatsCache && (now - animalStatsCacheTime < 15000)) {
+      return res.json(animalStatsCache);
+    }
+
     const queryHelper = async (queryText, params = []) => {
       try {
         const res = await pool.query(queryText, params);
@@ -255,12 +308,16 @@ async function getAnimalStats(req, res) {
       queryHelper("SELECT COUNT(*)::int AS count FROM ngos WHERE area_of_work = 'Animal Welfare'")
     ]);
 
-    return res.json({
+    const result = {
       rescued,
       adopted,
       fed,
       shelters
-    });
+    };
+
+    animalStatsCache = result;
+    animalStatsCacheTime = now;
+    return res.json(result);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

@@ -232,8 +232,57 @@ async function getMyCampaigns(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
+
+async function getDonationStats(req, res) {
+  try {
+    const userId = req.user.id;
+    // 1. Total donations count & amount (monetary completed/pending)
+    const statsRes = await pool.query(
+      `SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::float AS sum 
+       FROM donations 
+       WHERE donor_id = $1 AND category = 'MONEY'`,
+      [userId]
+    );
+    const count = statsRes.rows[0].count;
+    const sum = statsRes.rows[0].sum;
+
+    // 2. NGO-wise Donation Summary
+    const ngoSummaryRes = await pool.query(
+      `SELECT n.name AS "ngoName", COALESCE(SUM(d.amount), 0)::float AS "totalAmount"
+       FROM donations d
+       JOIN ngos n ON d.recipient_ngo_id = n.id OR d.ngo_id = n.id
+       WHERE d.donor_id = $1 AND d.category = 'MONEY'
+       GROUP BY n.name`,
+      [userId]
+    );
+    const ngoSummary = mapRows(ngoSummaryRes.rows);
+
+    // 3. Recent Donation History (monetary)
+    const recentRes = await pool.query(
+      `SELECT d.id, d.amount, d.status, d.created_at, d.transaction_id, n.name AS "recipientNgoName"
+       FROM donations d
+       LEFT JOIN ngos n ON d.recipient_ngo_id = n.id OR d.ngo_id = n.id
+       WHERE d.donor_id = $1 AND d.category = 'MONEY'
+       ORDER BY d.created_at DESC
+       LIMIT 10`,
+      [userId]
+    );
+    const recent = mapRows(recentRes.rows);
+
+    return res.json({
+      totalDonations: count,
+      totalAmount: sum,
+      ngoSummary,
+      recent
+    });
+  } catch (err) {
+    console.error("[USER CONTROLLER] getDonationStats error:", err);
+    return res.status(500).json({ message: "Failed to fetch donation statistics", error: err.message });
+  }
+}
  
 export const userController = {
   getProfile, updateProfile, changePassword, deleteAccount,
   getMyDonations, getMyAdoptions, getMyRescueRequests, getMyCampaigns,
+  getDonationStats,
 };

@@ -280,6 +280,13 @@ async function updateStatus(req, res) {
       [status, req.params.id]
     );
 
+    if (status === "DELIVERED" && donation.category === "MONEY" && donation.status !== "DELIVERED") {
+      await pool.query(
+        "UPDATE ngos SET virtual_balance = COALESCE(virtual_balance, 0) + $1 WHERE id = $2",
+        [Number(donation.amount), donation.recipientNgoId]
+      );
+    }
+
     return res.json(mapRowKeys(rows[0]));
   } catch (err) {
     return res.status(500).json({ message: err.message });
