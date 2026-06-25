@@ -175,31 +175,52 @@ async function getMyDonations(req, res) {
   try {
     console.log(`[NGO CONTROLLER] Fetching donations for NGO: ${req.user?.id}`);
     const { rows: donationRows } = await pool.query(
-      "SELECT * FROM donations WHERE recipient_ngo_id = $1 ORDER BY created_at DESC",
+      `SELECT d.*, 
+              u.name AS "donor_name", u.phone_number AS "donor_phone",
+              dn.name AS "donor_ngo_name", dn.phone_number AS "donor_ngo_phone"
+       FROM donations d
+       LEFT JOIN users u ON d.donor_id = u.id
+       LEFT JOIN ngos dn ON d.donor_ngo_id = dn.id
+       WHERE d.recipient_ngo_id = $1 
+       ORDER BY d.created_at DESC`,
       [req.user.id]
     );
-    const donations = mapRows(donationRows);
+    const donations = mapRows(donationRows).map(row => {
+      return {
+        ...row,
+        donor: row.donorId ? {
+          id: row.donorId,
+          name: row.donorName,
+          phoneNumber: row.donorPhone
+        } : null,
+        donorNgo: row.donorNgoId ? {
+          id: row.donorNgoId,
+          name: row.donorNgoName,
+          phoneNumber: row.donorNgoPhone
+        } : null,
+        items: []
+      };
+    });
 
-    for (const d of donations) {
+    if (donations.length > 0) {
+      const donationIds = donations.map(d => d.id);
       const { rows: itemRows } = await pool.query(
-        "SELECT * FROM donation_items WHERE donation_id = $1",
-        [d.id]
+        "SELECT * FROM donation_items WHERE donation_id = ANY($1)",
+        [donationIds]
       );
-      d.items = mapRows(itemRows);
+      const mappedItems = mapRows(itemRows);
+      
+      const itemsByDonationId = {};
+      mappedItems.forEach(item => {
+        if (!itemsByDonationId[item.donationId]) {
+          itemsByDonationId[item.donationId] = [];
+        }
+        itemsByDonationId[item.donationId].push(item);
+      });
 
-      if (d.donorId) {
-        const { rows: uRows } = await pool.query("SELECT id, name, phone_number FROM users WHERE id = $1", [d.donorId]);
-        d.donor = uRows[0] ? mapRowKeys(uRows[0]) : null;
-      } else {
-        d.donor = null;
-      }
-
-      if (d.donorNgoId) {
-        const { rows: nRows } = await pool.query("SELECT id, name, phone_number FROM ngos WHERE id = $1", [d.donorNgoId]);
-        d.donorNgo = nRows[0] ? mapRowKeys(nRows[0]) : null;
-      } else {
-        d.donorNgo = null;
-      }
+      donations.forEach(d => {
+        d.items = itemsByDonationId[d.id] || [];
+      });
     }
 
     return res.json(donations);
@@ -231,26 +252,31 @@ async function getNearbyRescueRequests(req, res) {
  
     // Fetch all open rescue requests or requests assigned to this NGO
     const { rows: rescueRows } = await pool.query(
-      "SELECT * FROM rescue_requests WHERE status = 'OPEN' OR nearby_center_id = $1 ORDER BY created_at DESC",
+      `SELECT r.*, 
+              u.name AS "reporter_name", u.phone_number AS "reporter_phone",
+              n.name AS "reporter_ngo_name", n.phone_number AS "reporter_ngo_phone"
+       FROM rescue_requests r
+       LEFT JOIN users u ON r.reporter_id = u.id
+       LEFT JOIN ngos n ON r.reporter_ngo_id = n.id
+       WHERE r.status = 'OPEN' OR r.nearby_center_id = $1 
+       ORDER BY r.created_at DESC`,
       [req.user.id]
     );
-    const rescues = mapRows(rescueRows);
-
-    for (const r of rescues) {
-      if (r.reporterId) {
-        const { rows: uRows } = await pool.query("SELECT id, name, phone_number FROM users WHERE id = $1", [r.reporterId]);
-        r.reporter = uRows[0] ? mapRowKeys(uRows[0]) : null;
-      } else {
-        r.reporter = null;
-      }
-
-      if (r.reporterNgoId) {
-        const { rows: nRows } = await pool.query("SELECT id, name, phone_number FROM ngos WHERE id = $1", [r.reporterNgoId]);
-        r.reporterNgo = nRows[0] ? mapRowKeys(nRows[0]) : null;
-      } else {
-        r.reporterNgo = null;
-      }
-    }
+    const rescues = mapRows(rescueRows).map(row => {
+      return {
+        ...row,
+        reporter: row.reporterId ? {
+          id: row.reporterId,
+          name: row.reporterName,
+          phoneNumber: row.reporterPhone
+        } : null,
+        reporterNgo: row.reporterNgoId ? {
+          id: row.reporterNgoId,
+          name: row.reporterNgoName,
+          phoneNumber: row.reporterNgoPhone
+        } : null
+      };
+    });
  
     let results = rescues;
     if (ngo.latitude && ngo.longitude) {
@@ -364,15 +390,23 @@ async function createNgoReview(req, res) {
 async function listNgoReviews(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM ngo_reviews WHERE ngo_id = $1 ORDER BY created_at DESC",
+      `SELECT nr.*, u.name AS "user_name", u.photo_url AS "user_photo_url"
+       FROM ngo_reviews nr
+       LEFT JOIN users u ON nr.user_id = u.id
+       WHERE nr.ngo_id = $1 
+       ORDER BY nr.created_at DESC`,
       [req.params.id]
     );
-    const reviews = mapRows(rows);
-
-    for (const r of reviews) {
-      const { rows: uRows } = await pool.query("SELECT id, name, photo_url FROM users WHERE id = $1", [r.userId]);
-      r.user = uRows[0] ? mapRowKeys(uRows[0]) : null;
-    }
+    const reviews = mapRows(rows).map(row => {
+      return {
+        ...row,
+        user: row.userId ? {
+          id: row.userId,
+          name: row.userName,
+          photoUrl: row.userPhotoUrl
+        } : null
+      };
+    });
 
     return res.json(reviews);
   } catch (err) {

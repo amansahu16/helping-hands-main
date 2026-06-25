@@ -5,6 +5,11 @@ import crypto from "crypto";
  
 async function listCampaigns(req, res) {
   try {
+    // Automatically transition expired campaigns to COMPLETED in the database
+    await pool.query(
+      "UPDATE campaigns SET status = 'COMPLETED' WHERE time_to IS NOT NULL AND time_to < NOW() AND status NOT IN ('COMPLETED', 'CANCELLED')"
+    );
+
     const { status, type, location, organizerUserId, organizerNgoId, page = 1, limit = 100 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     const params = [];
@@ -25,10 +30,14 @@ async function listCampaigns(req, res) {
       queryText += ` AND c.status = $${paramIndex}`;
       params.push(status);
       paramIndex++;
+      if (status === "PLANNED" || status === "ONGOING") {
+        queryText += ` AND (c.time_to IS NULL OR c.time_to > NOW())`;
+      }
     } else {
       queryText += ` AND c.status NOT IN ($${paramIndex}, $${paramIndex + 1})`;
       params.push("COMPLETED", "CANCELLED");
       paramIndex += 2;
+      queryText += ` AND (c.time_to IS NULL OR c.time_to > NOW())`;
     }
 
     if (type) {
@@ -77,6 +86,11 @@ async function listCampaigns(req, res) {
  
 async function getCampaignById(req, res) {
   try {
+    // Automatically transition expired campaigns to COMPLETED in the database
+    await pool.query(
+      "UPDATE campaigns SET status = 'COMPLETED' WHERE time_to IS NOT NULL AND time_to < NOW() AND status NOT IN ('COMPLETED', 'CANCELLED')"
+    );
+
     const queryText = `
       SELECT c.*, 
              u.name AS "user_name", u.photo_url AS "user_photoUrl",

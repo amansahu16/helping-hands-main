@@ -62,8 +62,11 @@ export default function JoinCampaign() {
     api.get('/campaigns?limit=200')
       .then(({ data }) => {
         const raw = Array.isArray(data) ? data : (data.data || data.campaigns || [])
-        // Keep running (ONGOING) or going to start (PLANNED) campaigns
-        const active = raw.filter(c => c.status === 'ONGOING' || c.status === 'PLANNED')
+        // Keep running (ONGOING) or going to start (PLANNED) campaigns, and exclude ones that have ended
+        const active = raw.filter(c => 
+          (c.status === 'ONGOING' || c.status === 'PLANNED') &&
+          (!c.timeTo || new Date(c.timeTo) > new Date())
+        )
         setCampaigns(active)
       })
       .catch(() => setCampaigns([]))

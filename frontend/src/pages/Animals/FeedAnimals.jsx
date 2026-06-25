@@ -27,9 +27,10 @@ export default function FeedAnimals() {
     api.get('/campaigns?type=ANIMAL_WELFARE&limit=100')
       .then(({ data }) => {
         const list = Array.isArray(data) ? data : (data.data || data.campaigns || [])
-        // Keep only running or planned ones
+        // Keep only running or planned ones, and exclude ones that have ended
         const filtered = list.filter(c =>
-          c.status === 'ONGOING' || c.status === 'PLANNED'
+          (c.status === 'ONGOING' || c.status === 'PLANNED') &&
+          (!c.timeTo || new Date(c.timeTo) > new Date())
         )
         setCampaigns(filtered)
       })

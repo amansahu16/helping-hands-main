@@ -769,9 +769,9 @@ export default function DonateToNGO() {
                         const finalAmount = form.amount === 'Custom' ? form.customAmount : form.amount
                         const upiId = selectedNgo?.upiId || 'helpinghands@upi'
                         const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(selectedNgo?.name || 'Helping Hands')}&am=${finalAmount}&cu=INR`
-                        
+
                         return (
-                          <div className="mt-4 p-5 rounded-2xl border flex flex-col items-center gap-4 bg-gray dark:bg-[#16163A]/60 border-dashed border-[#13221B]/25">
+                          <div className="mt-4 p-5 rounded-2xl border flex flex-col items-center gap-4 bg-gray dark:bg-[#16163w]/60 border-dashed border-[#13221w]/25">
                             <div className="text-center">
                               <p className={`text-xs font-bold ${heroText}`}>UPI Payment Option</p>
                               <p className={`text-[10px] ${mutedText} mt-0.5`}>Direct transfer to {selectedNgo?.name}</p>
@@ -798,7 +798,7 @@ export default function DonateToNGO() {
 
                             {/* Clickable UPI ID */}
                             <div className="flex items-center gap-2 mt-1">
-                              <span 
+                              <span
                                 onClick={() => {
                                   if (isMobile) {
                                     window.location.href = upiUrl

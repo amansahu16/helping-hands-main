@@ -117,27 +117,50 @@ async function getMyDonations(req, res) {
   try {
     console.log(`[USER CONTROLLER] Fetching donations for user: ${req.user?.id}`);
     const { rows: donationRows } = await pool.query(
-      "SELECT * FROM donations WHERE donor_id = $1 ORDER BY created_at DESC",
+      `SELECT d.*, 
+              n.name AS "recipient_ngo_name", 
+              n.photo_url AS "recipient_ngo_photo_url", 
+              n.registration_number AS "recipient_ngo_registration_number", 
+              n.upi_id AS "recipient_ngo_upi_id"
+       FROM donations d
+       LEFT JOIN ngos n ON d.recipient_ngo_id = n.id
+       WHERE d.donor_id = $1 
+       ORDER BY d.created_at DESC`,
       [req.user.id]
     );
-    const donations = mapRows(donationRows);
+    const donations = mapRows(donationRows).map(row => {
+      return {
+        ...row,
+        recipientNgo: row.recipientNgoId ? {
+          id: row.recipientNgoId,
+          name: row.recipientNgoName,
+          photoUrl: row.recipientNgoPhotoUrl,
+          registrationNumber: row.recipientNgoRegistrationNumber,
+          upiId: row.recipientNgoUpiId
+        } : null,
+        items: []
+      };
+    });
 
-    for (const d of donations) {
+    if (donations.length > 0) {
+      const donationIds = donations.map(d => d.id);
       const { rows: itemRows } = await pool.query(
-        "SELECT * FROM donation_items WHERE donation_id = $1",
-        [d.id]
+        "SELECT * FROM donation_items WHERE donation_id = ANY($1)",
+        [donationIds]
       );
-      d.items = mapRows(itemRows);
+      const mappedItems = mapRows(itemRows);
+      
+      const itemsByDonationId = {};
+      mappedItems.forEach(item => {
+        if (!itemsByDonationId[item.donationId]) {
+          itemsByDonationId[item.donationId] = [];
+        }
+        itemsByDonationId[item.donationId].push(item);
+      });
 
-      if (d.recipientNgoId) {
-        const { rows: ngoRows } = await pool.query(
-          "SELECT id, name, photo_url, registration_number, upi_id FROM ngos WHERE id = $1",
-          [d.recipientNgoId]
-        );
-        d.recipientNgo = ngoRows[0] ? mapRowKeys(ngoRows[0]) : null;
-      } else {
-        d.recipientNgo = null;
-      }
+      donations.forEach(d => {
+        d.items = itemsByDonationId[d.id] || [];
+      });
     }
 
     return res.json(donations);
@@ -150,28 +173,36 @@ async function getMyDonations(req, res) {
 async function getMyAdoptions(req, res) {
   try {
     const { rows: adoptionRows } = await pool.query(
-      "SELECT * FROM adoptions WHERE adopter_id = $1 ORDER BY created_at DESC",
+      `SELECT a.*, 
+              an.category AS "animal_category", an.name AS "animal_name", an.age AS "animal_age", an.location AS "animal_location", an.description AS "animal_description", an.photos AS "animal_photos", an.status AS "animal_status",
+              n.name AS "ngo_name"
+       FROM adoptions a
+       LEFT JOIN animals an ON a.animal_id = an.id
+       LEFT JOIN ngos n ON a.ngo_id = n.id
+       WHERE a.adopter_id = $1 
+       ORDER BY a.created_at DESC`,
       [req.user.id]
     );
-    const adoptions = mapRows(adoptionRows);
-
-    for (const a of adoptions) {
-      const { rows: animalRows } = await pool.query(
-        "SELECT * FROM animals WHERE id = $1",
-        [a.animalId]
-      );
-      a.animal = animalRows[0] ? mapRowKeys(animalRows[0]) : null;
-
-      if (a.ngoId) {
-        const { rows: ngoRows } = await pool.query(
-          "SELECT id, name FROM ngos WHERE id = $1",
-          [a.ngoId]
-        );
-        a.ngo = ngoRows[0] ? mapRowKeys(ngoRows[0]) : null;
-      } else {
-        a.ngo = null;
-      }
-    }
+    
+    const adoptions = mapRows(adoptionRows).map(row => {
+      return {
+        ...row,
+        animal: row.animalId ? {
+          id: row.animalId,
+          category: row.animalCategory,
+          name: row.animalName,
+          age: row.animalAge,
+          location: row.animalLocation,
+          description: row.animalDescription,
+          photos: row.animalPhotos,
+          status: row.animalStatus
+        } : null,
+        ngo: row.ngoId ? {
+          id: row.ngoId,
+          name: row.ngoName
+        } : null
+      };
+    });
 
     return res.json(adoptions);
   } catch (err) {
@@ -182,22 +213,23 @@ async function getMyAdoptions(req, res) {
 async function getMyRescueRequests(req, res) {
   try {
     const { rows: rescueRows } = await pool.query(
-      "SELECT * FROM rescue_requests WHERE reporter_id = $1 ORDER BY created_at DESC",
+      `SELECT r.*, n.name AS "ngo_name"
+       FROM rescue_requests r
+       LEFT JOIN ngos n ON r.nearby_center_id = n.id
+       WHERE r.reporter_id = $1 
+       ORDER BY r.created_at DESC`,
       [req.user.id]
     );
-    const rescues = mapRows(rescueRows);
-
-    for (const r of rescues) {
-      if (r.nearbyCenterId) {
-        const { rows: ngoRows } = await pool.query(
-          "SELECT id, name FROM ngos WHERE id = $1",
-          [r.nearbyCenterId]
-        );
-        r.nearbyCenter = ngoRows[0] ? mapRowKeys(ngoRows[0]) : null;
-      } else {
-        r.nearbyCenter = null;
-      }
-    }
+    
+    const rescues = mapRows(rescueRows).map(row => {
+      return {
+        ...row,
+        nearbyCenter: row.nearbyCenterId ? {
+          id: row.nearbyCenterId,
+          name: row.ngoName
+        } : null
+      };
+    });
 
     return res.json(rescues);
   } catch (err) {
@@ -207,6 +239,11 @@ async function getMyRescueRequests(req, res) {
  
 async function getMyCampaigns(req, res) {
   try {
+    // Automatically transition expired campaigns to COMPLETED in the database
+    await pool.query(
+      "UPDATE campaigns SET status = 'COMPLETED' WHERE time_to IS NOT NULL AND time_to < NOW() AND status NOT IN ('COMPLETED', 'CANCELLED')"
+    );
+
     const { rows: orgRows } = await pool.query(
       "SELECT * FROM campaigns WHERE organizer_user_id = $1 ORDER BY created_at DESC",
       [req.user.id]
@@ -214,18 +251,33 @@ async function getMyCampaigns(req, res) {
     const organized = mapRows(orgRows);
 
     const { rows: partRows } = await pool.query(
-      "SELECT * FROM campaign_participants WHERE user_id = $1 ORDER BY joined_at DESC",
+      `SELECT cp.*, 
+              c.name AS "campaign_name", c.type AS "campaign_type", c.description AS "campaign_description", c.location AS "campaign_location", c.time_from AS "campaign_time_from", c.time_to AS "campaign_time_to", c.max_participants AS "campaign_max_participants", c.current_participants AS "campaign_current_participants", c.status AS "campaign_status", c.created_at AS "campaign_created_at"
+       FROM campaign_participants cp
+       LEFT JOIN campaigns c ON cp.campaign_id = c.id
+       WHERE cp.user_id = $1 
+       ORDER BY cp.joined_at DESC`,
       [req.user.id]
     );
-    const joined = mapRows(partRows);
-
-    for (const j of joined) {
-      const { rows: campRows } = await pool.query(
-        "SELECT * FROM campaigns WHERE id = $1",
-        [j.campaignId]
-      );
-      j.campaign = campRows[0] ? mapRowKeys(campRows[0]) : null;
-    }
+    
+    const joined = mapRows(partRows).map(row => {
+      return {
+        ...row,
+        campaign: row.campaignId ? {
+          id: row.campaignId,
+          name: row.campaignName,
+          type: row.campaignType,
+          description: row.campaignDescription,
+          location: row.campaignLocation,
+          timeFrom: row.campaignTimeFrom,
+          timeTo: row.campaignTimeTo,
+          maxParticipants: row.campaignMaxParticipants,
+          currentParticipants: row.campaignCurrentParticipants,
+          status: row.campaignStatus,
+          createdAt: row.campaignCreatedAt
+        } : null
+      };
+    });
 
     return res.json({ organized, joined });
   } catch (err) {
