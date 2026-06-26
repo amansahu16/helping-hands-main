@@ -29,6 +29,38 @@ const connectDB = async () => {
             ALTER TABLE ngos ADD COLUMN IF NOT EXISTS account_number VARCHAR(50);
             ALTER TABLE ngos ADD COLUMN IF NOT EXISTS ifsc VARCHAR(20);
             ALTER TABLE ngos ADD COLUMN IF NOT EXISTS virtual_balance NUMERIC(12, 2) DEFAULT 0;
+
+            -- New relations
+            ALTER TABLE admins ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES admins(id) ON DELETE SET NULL;
+
+            ALTER TABLE newsletters ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+            ALTER TABLE newsletters ADD COLUMN IF NOT EXISTS ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL;
+
+            ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+            ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL;
+            ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS resolved_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL;
+            ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'PENDING';
+
+            ALTER TABLE locations ADD COLUMN IF NOT EXISTS created_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL;
+            ALTER TABLE locations ADD COLUMN IF NOT EXISTS ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL;
+
+            ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS updated_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL;
+            ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE faqs ADD COLUMN IF NOT EXISTS created_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL;
+            ALTER TABLE faqs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+            -- New indexes
+            CREATE INDEX IF NOT EXISTS idx_admins_created_by ON admins(created_by);
+            CREATE INDEX IF NOT EXISTS idx_newsletters_user ON newsletters(user_id);
+            CREATE INDEX IF NOT EXISTS idx_newsletters_ngo ON newsletters(ngo_id);
+            CREATE INDEX IF NOT EXISTS idx_contact_messages_user ON contact_messages(user_id);
+            CREATE INDEX IF NOT EXISTS idx_contact_messages_ngo ON contact_messages(ngo_id);
+            CREATE INDEX IF NOT EXISTS idx_contact_messages_admin ON contact_messages(resolved_by_admin_id);
+            CREATE INDEX IF NOT EXISTS idx_locations_admin ON locations(created_by_admin_id);
+            CREATE INDEX IF NOT EXISTS idx_locations_ngo ON locations(ngo_id);
+            CREATE INDEX IF NOT EXISTS idx_system_settings_admin ON system_settings(updated_by_admin_id);
+            CREATE INDEX IF NOT EXISTS idx_faqs_admin ON faqs(created_by_admin_id);
         `);
         console.log("Database schema columns checked and updated successfully.");
 

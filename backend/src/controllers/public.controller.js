@@ -18,16 +18,24 @@ let leaderboardCacheTime = 0;
 async function listFaqs(req, res) {
   try {
     const { category } = req.query;
-    let queryText = "SELECT * FROM faqs";
+    let queryText = `
+      SELECT f.*, a.name AS "creator_admin_name"
+      FROM faqs f
+      LEFT JOIN admins a ON f.created_by_admin_id = a.id
+    `;
     const params = [];
     if (category) {
-      queryText += " WHERE category ILIKE $1";
+      queryText += " WHERE f.category ILIKE $1";
       params.push(`%${category}%`);
     }
-    queryText += " ORDER BY category ASC";
+    queryText += " ORDER BY f.category ASC, f.id ASC";
 
     const { rows } = await pool.query(queryText, params);
-    return res.json(mapRows(rows));
+    const faqs = mapRows(rows).map(row => ({
+      ...row,
+      createdByAdmin: row.createdByAdminId ? { name: row.creatorAdminName } : null
+    }));
+    return res.json(faqs);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -83,16 +91,28 @@ async function subscribeNewsletter(req, res) {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
 
+    // Check if email matches an existing user or NGO
+    const userCheck = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const userId = userCheck.rows[0]?.id || null;
+
+    const ngoCheck = await pool.query("SELECT id FROM ngos WHERE email = $1", [email]);
+    const ngoId = ngoCheck.rows[0]?.id || null;
+
     const check = await pool.query("SELECT id FROM newsletters WHERE email = $1", [email]);
     let subscriptionId;
 
     if (check.rows.length > 0) {
       subscriptionId = check.rows[0].id;
+      // Optionally update user_id / ngo_id if not already set
+      await pool.query(
+        "UPDATE newsletters SET user_id = COALESCE(user_id, $1), ngo_id = COALESCE(ngo_id, $2) WHERE id = $3",
+        [userId, ngoId, subscriptionId]
+      );
     } else {
       const id = crypto.randomUUID();
       const insert = await pool.query(
-        "INSERT INTO newsletters (id, email, subscribed_at) VALUES ($1, $2, NOW()) RETURNING id",
-        [id, email]
+        "INSERT INTO newsletters (id, email, user_id, ngo_id, subscribed_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id",
+        [id, email, userId, ngoId]
       );
       subscriptionId = insert.rows[0].id;
     }
@@ -123,10 +143,18 @@ async function sendContactMessage(req, res) {
       return res.status(400).json({ message: "Name, email, and message are required" });
     }
 
+    // Check if email matches an existing user or NGO
+    const userCheck = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const userId = userCheck.rows[0]?.id || null;
+
+    const ngoCheck = await pool.query("SELECT id FROM ngos WHERE email = $1", [email]);
+    const ngoId = ngoCheck.rows[0]?.id || null;
+
     const id = crypto.randomUUID();
     const { rows } = await pool.query(
-      "INSERT INTO contact_messages (id, name, email, phone, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id",
-      [id, name, email, phone || null, message]
+      `INSERT INTO contact_messages (id, name, email, phone, message, user_id, ngo_id, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', NOW()) RETURNING id`,
+      [id, name, email, phone || null, message, userId, ngoId]
     );
 
     return res.status(201).json({ message: "Message received. We'll get back to you soon.", id: rows[0].id });
@@ -140,16 +168,28 @@ async function sendContactMessage(req, res) {
 async function listLocations(req, res) {
   try {
     const { type } = req.query;
-    let queryText = "SELECT * FROM locations";
+    let queryText = `
+      SELECT l.*, 
+             a.name AS "creator_admin_name",
+             n.name AS "ngo_name"
+      FROM locations l
+      LEFT JOIN admins a ON l.created_by_admin_id = a.id
+      LEFT JOIN ngos n ON l.ngo_id = n.id
+    `;
     const params = [];
     if (type) {
-      queryText += " WHERE type = $1";
+      queryText += " WHERE l.type = $1";
       params.push(type);
     }
-    queryText += " ORDER BY name ASC";
+    queryText += " ORDER BY l.name ASC";
 
     const { rows } = await pool.query(queryText, params);
-    return res.json(mapRows(rows));
+    const locations = mapRows(rows).map(row => ({
+      ...row,
+      createdByAdmin: row.createdByAdminId ? { name: row.creatorAdminName } : null,
+      ngo: row.ngoId ? { name: row.ngoName } : null
+    }));
+    return res.json(locations);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -157,9 +197,25 @@ async function listLocations(req, res) {
 
 async function getLocationById(req, res) {
   try {
-    const { rows } = await pool.query("SELECT * FROM locations WHERE id = $1", [req.params.id]);
-    const location = rows[0] ? mapRowKeys(rows[0]) : null;
-    if (!location) return res.status(404).json({ message: "Location not found" });
+    const { rows } = await pool.query(`
+      SELECT l.*, 
+             a.name AS "creator_admin_name",
+             n.name AS "ngo_name"
+      FROM locations l
+      LEFT JOIN admins a ON l.created_by_admin_id = a.id
+      LEFT JOIN ngos n ON l.ngo_id = n.id
+      WHERE l.id = $1
+    `, [req.params.id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+    const row = mapRowKeys(rows[0]);
+    const location = {
+      ...row,
+      createdByAdmin: row.createdByAdminId ? { name: row.creatorAdminName } : null,
+      ngo: row.ngoId ? { name: row.ngoName } : null
+    };
     return res.json(location);
   } catch (err) {
     return res.status(500).json({ message: err.message });

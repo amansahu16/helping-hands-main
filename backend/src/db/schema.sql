@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS admins (
     email VARCHAR(255) UNIQUE NOT NULL,
     phone_number VARCHAR(15),
     password_hash VARCHAR(255) NOT NULL,
+    created_by UUID REFERENCES admins(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -205,6 +206,8 @@ CREATE TABLE IF NOT EXISTS testimonials (
 CREATE TABLE IF NOT EXISTS newsletters (
     id UUID PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL,
     subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -215,6 +218,10 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(15),
     message TEXT NOT NULL,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL,
+    resolved_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    status VARCHAR(30) DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -225,13 +232,17 @@ CREATE TABLE IF NOT EXISTS locations (
     address TEXT NOT NULL,
     latitude NUMERIC(10, 7),
     longitude NUMERIC(10, 7),
-    type VARCHAR(50) DEFAULT 'GENERAL'
+    type VARCHAR(50) DEFAULT 'GENERAL',
+    created_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL
 );
 
 -- 17. System Settings Table
 CREATE TABLE IF NOT EXISTS system_settings (
     key VARCHAR(100) PRIMARY KEY,
-    value TEXT
+    value TEXT,
+    updated_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 18. Complaints Table
@@ -251,7 +262,9 @@ CREATE TABLE IF NOT EXISTS faqs (
     id SERIAL PRIMARY KEY,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
-    category VARCHAR(100)
+    category VARCHAR(100),
+    created_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================================
@@ -300,3 +313,25 @@ CREATE INDEX IF NOT EXISTS idx_testimonials_user ON testimonials(user_id);
 
 -- Complaints Index
 CREATE INDEX IF NOT EXISTS idx_complaints_reporter ON complaints(reporter_id);
+
+-- Admins Created By Index
+CREATE INDEX IF NOT EXISTS idx_admins_created_by ON admins(created_by);
+
+-- Newsletters User & NGO Indexes
+CREATE INDEX IF NOT EXISTS idx_newsletters_user ON newsletters(user_id);
+CREATE INDEX IF NOT EXISTS idx_newsletters_ngo ON newsletters(ngo_id);
+
+-- Contact Messages User, NGO & Admin Indexes
+CREATE INDEX IF NOT EXISTS idx_contact_messages_user ON contact_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_ngo ON contact_messages(ngo_id);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_admin ON contact_messages(resolved_by_admin_id);
+
+-- Locations Admin & NGO Indexes
+CREATE INDEX IF NOT EXISTS idx_locations_admin ON locations(created_by_admin_id);
+CREATE INDEX IF NOT EXISTS idx_locations_ngo ON locations(ngo_id);
+
+-- System Settings Admin Index
+CREATE INDEX IF NOT EXISTS idx_system_settings_admin ON system_settings(updated_by_admin_id);
+
+-- FAQs Admin Index
+CREATE INDEX IF NOT EXISTS idx_faqs_admin ON faqs(created_by_admin_id);

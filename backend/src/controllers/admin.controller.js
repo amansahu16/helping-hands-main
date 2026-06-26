@@ -41,9 +41,11 @@ async function registerAdmin(req, res) {
     const passwordHash = await hashPassword(password);
     const id = crypto.randomUUID();
 
+    const creatorId = req.user?.id || null;
+
     const insertRes = await pool.query(
-      "INSERT INTO admins (id, name, email, phone_number, password_hash, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *",
-      [id, name, email, phoneNumber, passwordHash]
+      "INSERT INTO admins (id, name, email, phone_number, password_hash, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *",
+      [id, name, email, phoneNumber, passwordHash, creatorId]
     );
     const admin = mapRowKeys(insertRes.rows[0]);
 
@@ -361,17 +363,27 @@ async function deleteOperation(req, res) {
 
 async function getContactSettings(req, res) {
   try {
-    const { rows } = await pool.query("SELECT * FROM system_settings");
+    const { rows } = await pool.query(`
+      SELECT ss.*, a.name AS "updated_by_admin_name"
+      FROM system_settings ss
+      LEFT JOIN admins a ON ss.updated_by_admin_id = a.id
+    `);
     const settings = mapRows(rows);
     const settingsObj = {};
     settings.forEach(s => {
-      settingsObj[s.key] = s.value;
+      settingsObj[s.key] = {
+        value: s.value,
+        updatedByAdmin: s.updatedByAdminId ? { name: s.updatedByAdminName } : null,
+        updatedAt: s.updatedAt
+      };
     });
 
     return res.json({
-      contact_email: settingsObj.contact_email || "hello@helpinghands.org",
-      contact_phone: settingsObj.contact_phone || "+91 12345 67890",
-      contact_network: settingsObj.contact_network || "Pan-India (25+ cities)",
+      contact_email: settingsObj.contact_email?.value || "hello@helpinghands.org",
+      contact_phone: settingsObj.contact_phone?.value || "+91 12345 67890",
+      contact_network: settingsObj.contact_network?.value || "Pan-India (25+ cities)",
+      updatedByAdmin: settingsObj.contact_email?.updatedByAdmin || settingsObj.contact_phone?.updatedByAdmin || settingsObj.contact_network?.updatedByAdmin || null,
+      updatedAt: settingsObj.contact_email?.updatedAt || settingsObj.contact_phone?.updatedAt || settingsObj.contact_network?.updatedAt || null
     });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -381,23 +393,24 @@ async function getContactSettings(req, res) {
 async function updateContactSettings(req, res) {
   try {
     const { contact_email, contact_phone, contact_network } = req.body;
+    const adminId = req.user.id;
 
     if (contact_email) {
       await pool.query(
-        "INSERT INTO system_settings (key, value) VALUES ('contact_email', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
-        [contact_email]
+        "INSERT INTO system_settings (key, value, updated_by_admin_id, updated_at) VALUES ('contact_email', $1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_by_admin_id = $2, updated_at = NOW()",
+        [contact_email, adminId]
       );
     }
     if (contact_phone) {
       await pool.query(
-        "INSERT INTO system_settings (key, value) VALUES ('contact_phone', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
-        [contact_phone]
+        "INSERT INTO system_settings (key, value, updated_by_admin_id, updated_at) VALUES ('contact_phone', $1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_by_admin_id = $2, updated_at = NOW()",
+        [contact_phone, adminId]
       );
     }
     if (contact_network) {
       await pool.query(
-        "INSERT INTO system_settings (key, value) VALUES ('contact_network', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
-        [contact_network]
+        "INSERT INTO system_settings (key, value, updated_by_admin_id, updated_at) VALUES ('contact_network', $1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_by_admin_id = $2, updated_at = NOW()",
+        [contact_network, adminId]
       );
     }
 
@@ -409,7 +422,7 @@ async function updateContactSettings(req, res) {
 
 async function addLocation(req, res) {
   try {
-    const { name, address, latitude, longitude, type } = req.body;
+    const { name, address, latitude, longitude, type, ngoId } = req.body;
     if (!name || !address) {
       return res.status(400).json({ message: "Name and address are required" });
     }
@@ -418,10 +431,12 @@ async function addLocation(req, res) {
     const lat = latitude ? parseFloat(latitude) : null;
     const lon = longitude ? parseFloat(longitude) : null;
     const locType = type || "GENERAL";
+    const creatorAdminId = req.user?.id || null;
+    const parsedNgoId = ngoId || null;
 
     const { rows } = await pool.query(
-      "INSERT INTO locations (id, name, address, latitude, longitude, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [id, name, address, lat, lon, locType]
+      "INSERT INTO locations (id, name, address, latitude, longitude, type, created_by_admin_id, ngo_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [id, name, address, lat, lon, locType, creatorAdminId, parsedNgoId]
     );
     const location = mapRowKeys(rows[0]);
 
@@ -452,7 +467,17 @@ async function listFeedbacks(req, res) {
         LEFT JOIN users u ON t.user_id = u.id
         ORDER BY t.created_at DESC
       `),
-      pool.query("SELECT * FROM contact_messages ORDER BY created_at DESC"),
+      pool.query(`
+        SELECT cm.*, 
+               u.name AS "user_name", u.email AS "user_email",
+               n.name AS "ngo_name", n.email AS "ngo_email",
+               a.name AS "resolved_by_admin_name"
+        FROM contact_messages cm
+        LEFT JOIN users u ON cm.user_id = u.id
+        LEFT JOIN ngos n ON cm.ngo_id = n.id
+        LEFT JOIN admins a ON cm.resolved_by_admin_id = a.id
+        ORDER BY cm.created_at DESC
+      `),
       pool.query(`
         SELECT c.*, u.name AS "reporter_name", u.email AS "reporter_email"
         FROM complaints c
@@ -466,7 +491,12 @@ async function listFeedbacks(req, res) {
       user: row.userId ? { name: row.userName, email: row.userEmail } : null
     }));
 
-    const contactMessages = mapRows(cRes.rows);
+    const contactMessages = mapRows(cRes.rows).map(row => ({
+      ...row,
+      user: row.userId ? { name: row.userName, email: row.userEmail } : null,
+      ngo: row.ngoId ? { name: row.ngoName, email: row.ngoEmail } : null,
+      resolvedByAdmin: row.resolvedByAdminId ? { name: row.resolvedByAdminName } : null
+    }));
 
     const complaints = mapRows(compRes.rows).map(row => ({
       ...row,
@@ -535,6 +565,96 @@ async function reportComplaint(req, res) {
   }
 }
 
+async function resolveContactMessage(req, res) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // e.g. RESOLVED, IN_PROGRESS, PENDING
+    const adminId = req.user.id;
+
+    const { rows } = await pool.query(
+      "UPDATE contact_messages SET status = $1, resolved_by_admin_id = $2 WHERE id = $3 RETURNING *",
+      [status, adminId, id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Contact message not found" });
+    }
+    const message = mapRowKeys(rows[0]);
+    return res.json({ message: `Contact message status updated to ${status}`, data: message });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function listNewsletterSubscribers(req, res) {
+  try {
+    const { rows } = await pool.query(`
+      SELECT n.*, 
+             u.name AS "user_name", u.email AS "user_email",
+             ngo.name AS "ngo_name", ngo.email AS "ngo_email"
+      FROM newsletters n
+      LEFT JOIN users u ON n.user_id = u.id
+      LEFT JOIN ngos ngo ON n.ngo_id = ngo.id
+      ORDER BY n.subscribed_at DESC
+    `);
+    const subscribers = mapRows(rows).map(row => ({
+      ...row,
+      user: row.userId ? { name: row.userName, email: row.userEmail } : null,
+      ngo: row.ngoId ? { name: row.ngoName, email: row.ngoEmail } : null
+    }));
+    return res.json(subscribers);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function createFaq(req, res) {
+  try {
+    const { question, answer, category } = req.body;
+    if (!question || !answer) {
+      return res.status(400).json({ message: "Question and answer are required" });
+    }
+    const adminId = req.user.id;
+
+    const { rows } = await pool.query(
+      "INSERT INTO faqs (question, answer, category, created_by_admin_id, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *",
+      [question, answer, category || null, adminId]
+    );
+    const faq = mapRowKeys(rows[0]);
+    return res.status(201).json(faq);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function updateFaq(req, res) {
+  try {
+    const { id } = req.params;
+    const { question, answer, category } = req.body;
+
+    const { rows } = await pool.query(
+      "UPDATE faqs SET question = COALESCE($1, question), answer = COALESCE($2, answer), category = COALESCE($3, category) WHERE id = $4 RETURNING *",
+      [question, answer, category, id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "FAQ not found" });
+    }
+    const faq = mapRowKeys(rows[0]);
+    return res.json(faq);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function deleteFaq(req, res) {
+  try {
+    const { id } = req.params;
+    await pool.query("DELETE FROM faqs WHERE id = $1", [id]);
+    return res.json({ message: "FAQ deleted successfully" });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
 export const adminController = {
   registerAdmin,
   loginAdmin,
@@ -554,4 +674,9 @@ export const adminController = {
   deleteFeedback,
   resolveComplaint,
   reportComplaint,
+  resolveContactMessage,
+  listNewsletterSubscribers,
+  createFaq,
+  updateFaq,
+  deleteFaq,
 };

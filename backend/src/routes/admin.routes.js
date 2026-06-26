@@ -37,6 +37,17 @@ router.get("/feedbacks",                  requireAuth, requireAdmin, adminContro
 router.delete("/feedbacks/:type/:id",     requireAuth, requireAdmin, adminController.deleteFeedback);
 router.put("/complaints/:id/resolve",     requireAuth, requireAdmin, adminController.resolveComplaint);
 
+// Contact messages resolving
+router.put("/contact-messages/:id/resolve", requireAuth, requireAdmin, adminController.resolveContactMessage);
+
+// Newsletter subscribers list
+router.get("/newsletter-subscribers",      requireAuth, requireAdmin, adminController.listNewsletterSubscribers);
+
+// FAQ management
+router.post("/faqs",                      requireAuth, requireAdmin, adminController.createFaq);
+router.put("/faqs/:id",                   requireAuth, requireAdmin, adminController.updateFaq);
+router.delete("/faqs/:id",                requireAuth, requireAdmin, adminController.deleteFaq);
+
 // General Complaint reporting (Any authenticated user can file)
 router.post("/complaints",                requireAuth, adminController.reportComplaint);
 
