@@ -115,7 +115,6 @@ async function deleteAccount(req, res) {
  
 async function getMyDonations(req, res) {
   try {
-    console.log(`[USER CONTROLLER] Fetching donations for user: ${req.user?.id}`);
     const { rows: donationRows } = await pool.query(
       `SELECT d.*, 
               n.name AS "recipient_ngo_name", 

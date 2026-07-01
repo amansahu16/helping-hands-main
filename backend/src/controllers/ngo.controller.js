@@ -173,7 +173,6 @@ async function changePassword(req, res) {
  
 async function getMyDonations(req, res) {
   try {
-    console.log(`[NGO CONTROLLER] Fetching donations for NGO: ${req.user?.id}`);
     const { rows: donationRows } = await pool.query(
       `SELECT d.*, 
               u.name AS "donor_name", u.phone_number AS "donor_phone",
