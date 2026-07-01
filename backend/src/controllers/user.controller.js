@@ -142,27 +142,6 @@ async function getMyDonations(req, res) {
       };
     });
 
-    if (donations.length > 0) {
-      const donationIds = donations.map(d => d.id);
-      const { rows: itemRows } = await pool.query(
-        "SELECT * FROM donation_items WHERE donation_id = ANY($1)",
-        [donationIds]
-      );
-      const mappedItems = mapRows(itemRows);
-      
-      const itemsByDonationId = {};
-      mappedItems.forEach(item => {
-        if (!itemsByDonationId[item.donationId]) {
-          itemsByDonationId[item.donationId] = [];
-        }
-        itemsByDonationId[item.donationId].push(item);
-      });
-
-      donations.forEach(d => {
-        d.items = itemsByDonationId[d.id] || [];
-      });
-    }
-
     return res.json(donations);
   } catch (err) {
     console.error("[USER CONTROLLER] getMyDonations Error:", err);
@@ -173,22 +152,31 @@ async function getMyDonations(req, res) {
 async function getMyAdoptions(req, res) {
   try {
     const { rows: adoptionRows } = await pool.query(
-      `SELECT a.*, 
-              an.category AS "animal_category", an.name AS "animal_name", an.age AS "animal_age", an.location AS "animal_location", an.description AS "animal_description", an.photos AS "animal_photos", an.status AS "animal_status",
-              n.name AS "ngo_name"
-       FROM adoptions a
-       LEFT JOIN animals an ON a.animal_id = an.id
-       LEFT JOIN ngos n ON a.ngo_id = n.id
-       WHERE a.adopter_id = $1 
-       ORDER BY a.created_at DESC`,
+      `SELECT 
+          ir.incident_id AS id,
+          ir.adopted_at AS created_at,
+          ir.nearby_hospital,
+          i.category AS animal_category,
+          i.name AS animal_name,
+          i.age AS animal_age,
+          i.location AS animal_location,
+          i.description AS animal_description,
+          i.photos AS animal_photos,
+          i.status AS animal_status,
+          n.name AS ngo_name,
+          n.id AS ngo_id
+       FROM incident_resolutions ir
+       JOIN incidents i ON ir.incident_id = i.id
+       LEFT JOIN accounts n ON ir.nearby_center_id = n.id
+       WHERE ir.adopter_id = $1
+       ORDER BY ir.adopted_at DESC`,
       [req.user.id]
     );
     
     const adoptions = mapRows(adoptionRows).map(row => {
       return {
         ...row,
-        animal: row.animalId ? {
-          id: row.animalId,
+        animal: row.animalCategory ? {
           category: row.animalCategory,
           name: row.animalName,
           age: row.animalAge,
@@ -197,10 +185,7 @@ async function getMyAdoptions(req, res) {
           photos: row.animalPhotos,
           status: row.animalStatus
         } : null,
-        ngo: row.ngoId ? {
-          id: row.ngoId,
-          name: row.ngoName
-        } : null
+        ngo: row.ngoId ? { id: row.ngoId, name: row.ngoName } : null
       };
     });
 
@@ -239,23 +224,21 @@ async function getMyRescueRequests(req, res) {
  
 async function getMyCampaigns(req, res) {
   try {
-    // Automatically transition expired campaigns to COMPLETED in the database
-    await pool.query(
-      "UPDATE campaigns SET status = 'COMPLETED' WHERE time_to IS NOT NULL AND time_to < NOW() AND status NOT IN ('COMPLETED', 'CANCELLED')"
-    );
-
     const { rows: orgRows } = await pool.query(
-      "SELECT * FROM campaigns WHERE organizer_user_id = $1 ORDER BY created_at DESC",
+      "SELECT * FROM campaigns WHERE organizer_id = $1 ORDER BY created_at DESC",
       [req.user.id]
     );
     const organized = mapRows(orgRows);
 
     const { rows: partRows } = await pool.query(
-      `SELECT cp.*, 
-              c.name AS "campaign_name", c.type AS "campaign_type", c.description AS "campaign_description", c.location AS "campaign_location", c.time_from AS "campaign_time_from", c.time_to AS "campaign_time_to", c.max_participants AS "campaign_max_participants", c.current_participants AS "campaign_current_participants", c.status AS "campaign_status", c.created_at AS "campaign_created_at"
+      `SELECT cp.*,
+              c.name AS "campaign_name", c.type AS "campaign_type", c.description AS "campaign_description",
+              c.location AS "campaign_location", c.time_from AS "campaign_time_from", c.time_to AS "campaign_time_to",
+              c.max_participants AS "campaign_max_participants", c.current_participants AS "campaign_current_participants",
+              c.status AS "campaign_status", c.created_at AS "campaign_created_at"
        FROM campaign_participants cp
        LEFT JOIN campaigns c ON cp.campaign_id = c.id
-       WHERE cp.user_id = $1 
+       WHERE cp.account_id = $1
        ORDER BY cp.joined_at DESC`,
       [req.user.id]
     );
@@ -288,7 +271,8 @@ async function getMyCampaigns(req, res) {
 async function getDonationStats(req, res) {
   try {
     const userId = req.user.id;
-    // 1. Total donations count & amount (monetary completed/pending)
+    // 1. Total monetary donations count & amount
+    // category is exposed by the compat.donations view (from donation_logistics join)
     const statsRes = await pool.query(
       `SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::float AS sum 
        FROM donations 
@@ -299,10 +283,11 @@ async function getDonationStats(req, res) {
     const sum = statsRes.rows[0].sum;
 
     // 2. NGO-wise Donation Summary
+    // recipient_ngo_id is the only FK column in the normalized schema; ngo_id does not exist
     const ngoSummaryRes = await pool.query(
       `SELECT n.name AS "ngoName", COALESCE(SUM(d.amount), 0)::float AS "totalAmount"
        FROM donations d
-       JOIN ngos n ON d.recipient_ngo_id = n.id OR d.ngo_id = n.id
+       JOIN ngos n ON d.recipient_ngo_id = n.id
        WHERE d.donor_id = $1 AND d.category = 'MONEY'
        GROUP BY n.name`,
       [userId]
@@ -313,7 +298,7 @@ async function getDonationStats(req, res) {
     const recentRes = await pool.query(
       `SELECT d.id, d.amount, d.status, d.created_at, d.transaction_id, n.name AS "recipientNgoName"
        FROM donations d
-       LEFT JOIN ngos n ON d.recipient_ngo_id = n.id OR d.ngo_id = n.id
+       LEFT JOIN ngos n ON d.recipient_ngo_id = n.id
        WHERE d.donor_id = $1 AND d.category = 'MONEY'
        ORDER BY d.created_at DESC
        LIMIT 10`,

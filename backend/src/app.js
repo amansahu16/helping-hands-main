@@ -58,7 +58,6 @@ app.use("/api/v1/ngos",         ngoRouter);
 app.use("/api/v1/donations",    donationRouter);
 app.use("/api/v1/campaigns",    campaignRouter);
 app.use("/api/v1/animals",      animalRouter);
-app.use("/api/v1/rescues",      rescueRouter);
 app.use("/api/v1/rescue",       rescueRouter);
 app.use("/api/v1/public",       publicRouter);
 app.use("/api/v1/admin",        adminRouter);

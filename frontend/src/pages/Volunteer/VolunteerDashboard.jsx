@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  User, Mail, Phone, Calendar, MapPin, Briefcase, Award, Heart,
+  User, Mail, Phone, Calendar, MapPin, Briefcase, Heart,
   Sparkles, Shield, Edit3, Trash2, CheckCircle, Clock, XCircle,
-  Loader2, Star, Save, Plus, ArrowRight, MessageSquare, Clipboard, List
+  Loader2, Star, Save, Plus, ArrowRight, MessageSquare
 } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
@@ -64,18 +64,6 @@ export default function VolunteerDashboard() {
   // Leaderboard / Volunteer points state
   const [points, setPoints] = useState(0)
 
-  // Feedback State
-  const [feedback, setFeedback] = useState({ rating: 5, content: '' })
-  const [feedbackSuccess, setFeedbackSuccess] = useState(false)
-  const [feedbackLoading, setFeedbackLoading] = useState(false)
-
-  // Campaign management state (from JoinCampaign)
-  const [selectedCampaignForManage, setSelectedCampaignForManage] = useState(null)
-  const [participants, setParticipants] = useState([])
-  const [participantsLoading, setParticipantsLoading] = useState(false)
-  const [codes, setCodes] = useState({})
-  const [actionLoading, setActionLoading] = useState({})
-
   // Operation Edit Modals State
   const [editingDonation, setEditingDonation] = useState(null)
   const [editingRescue, setEditingRescue] = useState(null)
@@ -131,7 +119,6 @@ export default function VolunteerDashboard() {
       const rescuesCount = (rescues || []).length
       const adoptionsCount = (adoptions || []).filter(a => a.status === 'COMPLETED').length
       const pendingAdoptionsCount = (adoptions || []).filter(a => a.status === 'IN_PROGRESS').length
-
       const calculatedPoints = (organizedCount * 10) + (joinedCount * 5) + (donationsCount * 5) + (rescuesCount * 8) + (adoptionsCount * 10) + (pendingAdoptionsCount * 2)
       setPoints(calculatedPoints)
 
@@ -227,61 +214,6 @@ export default function VolunteerDashboard() {
     }
   }
 
-  // Manage campaign volunteers (same as JoinCampaign)
-  const handleManageCampaign = async (campaign) => {
-    setSelectedCampaignForManage(campaign)
-    setParticipantsLoading(true)
-    try {
-      const { data } = await api.get(`/campaigns/${campaign.id}/participants`)
-      setParticipants(data || [])
-      const initialCodes = {}
-      data.forEach(p => {
-        initialCodes[p.id] = p.code || `V-${campaign.name.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`
-      })
-      setCodes(initialCodes)
-    } catch (err) {
-      console.error(err)
-      setParticipants([])
-    } finally {
-      setParticipantsLoading(false)
-    }
-  }
-
-  const handleApprove = async (participantId, codeVal) => {
-    if (!codeVal.trim()) {
-      alert('Please provide a volunteer number/code before approving!')
-      return
-    }
-    setActionLoading(prev => ({ ...prev, [participantId]: true }))
-    try {
-      await api.patch(`/campaigns/${selectedCampaignForManage.id}/participants/${participantId}/status`, {
-        status: 'APPROVED',
-        code: codeVal
-      })
-      setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status: 'APPROVED', code: codeVal } : p))
-      loadUserData()
-    } catch (err) {
-      alert('Failed to approve volunteer.')
-    } finally {
-      setActionLoading(prev => ({ ...prev, [participantId]: false }))
-    }
-  }
-
-  const handleReject = async (participantId) => {
-    if (!window.confirm('Are you sure you want to reject this volunteer?')) return
-    setActionLoading(prev => ({ ...prev, [participantId]: true }))
-    try {
-      await api.patch(`/campaigns/${selectedCampaignForManage.id}/participants/${participantId}/status`, {
-        status: 'REJECTED'
-      })
-      setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status: 'REJECTED' } : p))
-      loadUserData()
-    } catch (err) {
-      alert('Failed to reject volunteer.')
-    } finally {
-      setActionLoading(prev => ({ ...prev, [participantId]: false }))
-    }
-  }
 
   // Edit Donation request handler
   const handleEditDonationSubmit = async (e) => {

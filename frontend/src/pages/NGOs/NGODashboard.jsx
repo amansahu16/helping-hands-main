@@ -35,9 +35,8 @@ export default function NGODashboard() {
   const [profileForm, setProfileForm] = useState({
     name: '', phoneNumber: '', location: '', photoUrl: '',
     registrationNumber: '', areaOfWork: 'Animal Welfare', description: '',
-    achievements: '', workDone: '', latitude: null, longitude: null,
+    latitude: null, longitude: null,
     upiId: '', websiteUrl: '',
-    bankName: '', accountHolder: '', accountNumber: '', ifsc: '',
     virtualBalance: 0
   })
   const [profileSuccess, setProfileSuccess] = useState(false)
@@ -72,16 +71,10 @@ export default function NGODashboard() {
         registrationNumber: profile.registrationNumber || '',
         areaOfWork: profile.areaOfWork || 'Animal Welfare',
         description: profile.description || '',
-        achievements: profile.achievements || '',
-        workDone: profile.workDone || '',
         latitude: profile.latitude || null,
         longitude: profile.longitude || null,
         upiId: profile.upiId || '',
         websiteUrl: profile.websiteUrl || '',
-        bankName: profile.bankName || '',
-        accountHolder: profile.accountHolder || '',
-        accountNumber: profile.accountNumber || '',
-        ifsc: profile.ifsc || '',
         virtualBalance: profile.virtualBalance || 0
       })
 
@@ -353,7 +346,7 @@ export default function NGODashboard() {
               <div className={`border rounded-2xl p-4 flex flex-col gap-1.5 ${cardBg}`}>
                 <p className={`text-[10px] uppercase font-extrabold tracking-widest px-3 mb-2 ${textMuted}`}>NGO Navigation</p>
                 <button onClick={() => setActiveTab('profile')} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'profile')}`}>
-                  <Building size={14} /> Profile & Achievements
+                  <Building size={14} /> Profile
                 </button>
                 <button onClick={() => setActiveTab('rescues')} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'rescues')}`}>
                   <Shield size={14} /> Rescue Cases {alertRescues.length > 0 && <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-ping" />}
@@ -473,46 +466,6 @@ export default function NGODashboard() {
                           <div className="flex flex-col gap-1.5">
                             <label className={`text-xs font-bold ${textMuted}`}>Detailed NGO Description</label>
                             <textarea value={profileForm.description} onChange={e => setProfileForm({ ...profileForm, description: e.target.value })} rows={4} placeholder="Describe the mission, objectives, and reach of your NGO..." className={`${inputClass} resize-none`} />
-                          </div>
-
-                          {/* Achievements & Work Done Edit */}
-                          <div className="grid sm:grid-cols-2 gap-4 border-t pt-4 dark:border-white/5">
-                            <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Notable Achievements</label>
-                              <textarea value={profileForm.achievements} onChange={e => setProfileForm({ ...profileForm, achievements: e.target.value })} rows={3} placeholder="E.g. Rescued 500+ animals, fed 2000 street puppies, etc." className={`${inputClass} resize-none`} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              <label className={`text-xs font-bold ${textMuted}`}>Work Done / Impact Description</label>
-                              <textarea value={profileForm.workDone} onChange={e => setProfileForm({ ...profileForm, workDone: e.target.value })} rows={3} placeholder="E.g. Formed local rescue group, established veterinary support, etc." className={`${inputClass} resize-none`} />
-                            </div>
-                          </div>
-
-                          {/* NGO Bank Settlement Details */}
-                          <div className="border-t pt-4 dark:border-white/5 flex flex-col gap-3">
-                            <h4 className={`text-sm font-bold flex items-center gap-1.5 ${textTitle}`}>
-                              <Building size={14} className="text-[#3D6A53]" />
-                              <span>Bank Settlement Details (Demo/Test Mode)</span>
-                            </h4>
-                            <div className="grid sm:grid-cols-2 gap-4">
-                              <div className="flex flex-col gap-1.5">
-                                <label className={`text-xs font-bold ${textMuted}`}>Account Holder Name</label>
-                                <input value={profileForm.accountHolder} onChange={e => setProfileForm({ ...profileForm, accountHolder: e.target.value })} placeholder="e.g. NGO Trust Name" className={inputClass} />
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                <label className={`text-xs font-bold ${textMuted}`}>Bank Name</label>
-                                <input value={profileForm.bankName} onChange={e => setProfileForm({ ...profileForm, bankName: e.target.value })} placeholder="e.g. State Bank of India" className={inputClass} />
-                              </div>
-                            </div>
-                            <div className="grid sm:grid-cols-2 gap-4">
-                              <div className="flex flex-col gap-1.5">
-                                <label className={`text-xs font-bold ${textMuted}`}>Account Number</label>
-                                <input value={profileForm.accountNumber} onChange={e => setProfileForm({ ...profileForm, accountNumber: e.target.value })} placeholder="e.g. 123456789012" className={inputClass} />
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                <label className={`text-xs font-bold ${textMuted}`}>IFSC Code</label>
-                                <input value={profileForm.ifsc} onChange={e => setProfileForm({ ...profileForm, ifsc: e.target.value })} placeholder="e.g. SBIN0001234" className={inputClass} />
-                              </div>
-                            </div>
                           </div>
 
                           {profileSuccess && (
