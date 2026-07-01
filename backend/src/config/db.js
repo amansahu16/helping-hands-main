@@ -2,8 +2,14 @@ import pg from "pg";
 
 const { Pool } = pg;
 
+let connectionString = process.env.DATABASE_URL;
+if (connectionString) {
+  const separator = connectionString.includes("?") ? "&" : "?";
+  connectionString += `${separator}options=-c%20search_path%3Dcompat,public`;
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   max: 20,                  // Allow up to 20 concurrent connections
   idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
   connectionTimeoutMillis: 2000, // Terminate connection attempts after 2 seconds

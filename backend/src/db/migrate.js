@@ -12,6 +12,10 @@ async function migrate() {
     try {
         console.log("Starting PostgreSQL database migration...");
         
+        // Drop compat schema if exists to start fresh
+        console.log("Dropping existing compatibility schema if any...");
+        await pool.query("DROP SCHEMA IF EXISTS compat CASCADE");
+
         // 1. Get all tables in the public schema
         const tablesRes = await pool.query(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
@@ -64,10 +68,10 @@ async function migrate() {
         const phoneNumber = "6267718876";
         const id = crypto.randomUUID();
 
-        // Inserts default admin
+        // Inserts default admin directly into public.accounts table
         await pool.query(
-            "INSERT INTO admins (id, name, email, phone_number, password_hash, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (email) DO UPDATE SET name = $2, phone_number = $4, password_hash = $5",
-            [id, name, email, phoneNumber, passwordHash]
+            "INSERT INTO public.accounts (id, name, email, password_hash, phone_number, role, otp_verified, created_at) VALUES ($1, $2, $3, $4, $5, 'ADMIN', TRUE, NOW()) ON CONFLICT (email) DO UPDATE SET name = $2, phone_number = $5, password_hash = $4",
+            [id, name, email, passwordHash, phoneNumber]
         );
         console.log("Default admin account check complete.");
         console.log("PostgreSQL schema migration completed successfully!");
