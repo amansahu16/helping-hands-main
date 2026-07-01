@@ -328,7 +328,7 @@ async function joinCampaign(req, res) {
     const id = crypto.randomUUID();
 
     const { rows } = await pool.query(
-      `INSERT INTO campaign_participants (id, campaign_id, user_id, identity_number, status, joined_at)
+      `INSERT INTO campaign_participants (id, campaign_id, user_id, code, status, joined_at)
        VALUES ($1, $2, $3, $4, 'PENDING', NOW()) RETURNING *`,
       [id, campaign.id, req.user.id, identityNumber || null]
     );

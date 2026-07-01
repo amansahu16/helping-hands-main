@@ -46,6 +46,7 @@ export default function NGODashboard() {
   const [rescues, setRescues] = useState([])
   const [donations, setDonations] = useState([])
   const [posts, setPosts] = useState([])
+  const [editingCampaign, setEditingCampaign] = useState(null)
 
   // Post CRUD form state
   const [newPost, setNewPost] = useState({ title: '', description: '', location: '', postType: 'GENERAL' })
@@ -61,38 +62,58 @@ export default function NGODashboard() {
     if (!user) return
     setLoadingData(true)
     try {
+      const [
+        profileRes,
+        campaignsRes,
+        rescuesRes,
+        donationsRes,
+        postsRes
+      ] = await Promise.allSettled([
+        api.get('/ngos/me/profile'),
+        api.get(`/campaigns?organizerNgoId=${user.id}`),
+        api.get('/ngos/me/rescue-requests'),
+        api.get('/ngos/me/donations'),
+        api.get(`/ngos/${user.id}/posts`)
+      ])
+
       // 1. Fetch Profile
-      const { data: profile } = await api.get('/ngos/me/profile')
-      setProfileForm({
-        name: profile.name || '',
-        phoneNumber: profile.phoneNumber || '',
-        location: profile.location || '',
-        photoUrl: profile.photoUrl || '',
-        registrationNumber: profile.registrationNumber || '',
-        areaOfWork: profile.areaOfWork || 'Animal Welfare',
-        description: profile.description || '',
-        latitude: profile.latitude || null,
-        longitude: profile.longitude || null,
-        upiId: profile.upiId || '',
-        websiteUrl: profile.websiteUrl || '',
-        virtualBalance: profile.virtualBalance || 0
-      })
+      if (profileRes.status === 'fulfilled') {
+        const profile = profileRes.value.data
+        setProfileForm({
+          name: profile.name || '',
+          phoneNumber: profile.phoneNumber || '',
+          location: profile.location || '',
+          photoUrl: profile.photoUrl || '',
+          registrationNumber: profile.registrationNumber || '',
+          areaOfWork: profile.areaOfWork || 'Animal Welfare',
+          description: profile.description || '',
+          latitude: profile.latitude || null,
+          longitude: profile.longitude || null,
+          upiId: profile.upiId || '',
+          websiteUrl: profile.websiteUrl || '',
+          virtualBalance: profile.virtualBalance || 0
+        })
+      }
 
       // 2. Fetch Organized Campaigns
-      const { data: campaignsData } = await api.get(`/campaigns?organizerNgoId=${user.id}`)
-      setCampaigns(campaignsData || [])
+      if (campaignsRes.status === 'fulfilled') {
+        setCampaigns(campaignsRes.value.data || [])
+      }
 
-      // 3. Fetch Rescue Requests (open & assigned)
-      const { data: rescuesData } = await api.get('/ngos/me/rescue-requests')
-      setRescues(rescuesData || [])
+      // 3. Fetch Rescue Requests
+      if (rescuesRes.status === 'fulfilled') {
+        setRescues(rescuesRes.value.data || [])
+      }
 
       // 4. Fetch Donations Received
-      const { data: donationsData } = await api.get('/ngos/me/donations')
-      setDonations(donationsData || [])
+      if (donationsRes.status === 'fulfilled') {
+        setDonations(donationsRes.value.data || [])
+      }
 
       // 5. Fetch Posts
-      const { data: postsData } = await api.get(`/ngos/${user.id}/posts`)
-      setPosts(postsData || [])
+      if (postsRes.status === 'fulfilled') {
+        setPosts(postsRes.value.data || [])
+      }
 
     } catch (err) {
       console.error('Error loading NGO dashboard data:', err)
@@ -218,6 +239,50 @@ export default function NGODashboard() {
       alert('Donor notified! Share the OTP code with them once you meet to confirm pickup.')
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to notify reached.')
+    }
+  }
+
+  // Edit Campaign request handler
+  const handleEditCampaignSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await api.put(`/campaigns/${editingCampaign.id}`, {
+        name: editingCampaign.name,
+        description: editingCampaign.description,
+        location: editingCampaign.location,
+        timeFrom: editingCampaign.timeFrom,
+        timeTo: editingCampaign.timeTo,
+        maxParticipants: Number(editingCampaign.maxParticipants)
+      })
+      setEditingCampaign(null)
+      loadNgoData()
+      alert('Campaign details updated successfully!')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update campaign.')
+    }
+  }
+
+  // Delete Campaign request handler
+  const handleDeleteCampaign = async (campaignId) => {
+    if (!window.confirm('Are you sure you want to delete this campaign?')) return
+    try {
+      await api.delete(`/campaigns/${campaignId}`)
+      loadNgoData()
+      alert('Campaign deleted successfully.')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete campaign.')
+    }
+  }
+
+  // Mark Campaign Completed handler
+  const handleMarkCampaignCompleted = async (campaignId) => {
+    if (!window.confirm('Are you sure you want to mark this campaign as completed?')) return
+    try {
+      await api.patch(`/campaigns/${campaignId}/status`, { status: 'COMPLETED' })
+      loadNgoData()
+      alert('Campaign marked as completed!')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update campaign status.')
     }
   }
 
@@ -348,6 +413,9 @@ export default function NGODashboard() {
                 <button onClick={() => setActiveTab('profile')} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'profile')}`}>
                   <Building size={14} /> Profile
                 </button>
+                <button onClick={() => setActiveTab('campaigns')} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'campaigns')}`}>
+                  <Calendar size={14} /> My Campaigns & Drives
+                </button>
                 <button onClick={() => setActiveTab('rescues')} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'rescues')}`}>
                   <Shield size={14} /> Rescue Cases {alertRescues.length > 0 && <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-ping" />}
                 </button>
@@ -370,6 +438,69 @@ export default function NGODashboard() {
                 </div>
               ) : (
                 <>
+                  {/* CAMPAIGNS TAB */}
+                  {activeTab === 'campaigns' && (
+                    <div className="flex flex-col gap-6 reveal">
+                      <div className={`border rounded-2xl p-6 ${cardBg}`}>
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className={`font-['Poppins'] font-bold text-lg flex items-center gap-2 ${textTitle}`}>
+                            <Calendar size={16} className="text-[#3D6A53]" />
+                            <span>My Organized Campaigns & Drives</span>
+                          </h3>
+                          <Link to="/volunteer/start" className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#43E97B] to-[#13221B] text-white text-xs font-bold hover:-translate-y-0.5 transition-all">
+                            + Start New Drive
+                          </Link>
+                        </div>
+
+                        {campaigns.length === 0 ? (
+                          <div className="text-center py-12">
+                            <p className={`text-sm ${textMuted}`}>You haven't organized any campaigns or drives yet.</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-4">
+                            {campaigns.map(c => (
+                              <div key={c.id} className={`p-4 rounded-xl border flex flex-wrap justify-between items-center gap-3 transition-colors ${
+                                  isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
+                                 }`}>
+                                <div className="flex-1 min-w-[200px]">
+                                  <h4 className={`font-semibold text-sm ${textTitle}`}>{c.name}</h4>
+                                  <p className={`text-[11px] mt-0.5 ${textMuted}`}>
+                                    {c.location} • {c.timeFrom ? new Date(c.timeFrom).toLocaleDateString() : 'TBD'}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                      c.status === 'COMPLETED' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                      c.status === 'CANCELLED' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                      'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                    }`}>
+                                      {c.status}
+                                    </span>
+                                    <span className="text-[10px] text-[#43E97B] font-bold">
+                                      {c.currentParticipants || 0} volunteers registered
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                  {c.status !== 'COMPLETED' && c.status !== 'CANCELLED' && (
+                                    <button onClick={() => handleMarkCampaignCompleted(c.id)} className="px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 text-xs font-bold cursor-pointer">
+                                      Mark Completed
+                                    </button>
+                                  )}
+                                  <button onClick={() => setEditingCampaign(c)} className="p-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20" title="Edit details">
+                                    <Edit3 size={13} />
+                                  </button>
+                                  <button onClick={() => handleDeleteCampaign(c.id)} className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20" title="Delete campaign">
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* PROFILE TAB */}
                   {activeTab === 'profile' && (
                     <div className="flex flex-col gap-6 reveal">
@@ -801,6 +932,42 @@ export default function NGODashboard() {
           </div>
         </div>
       </section>
+      {/* EDIT CAMPAIGN MODAL */}
+      {editingCampaign && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <form onSubmit={handleEditCampaignSubmit} className={`border rounded-3xl p-6 max-w-md w-full flex flex-col gap-4 shadow-xl ${isDark ? 'bg-[#16163A] border-white/10' : 'bg-white border-gray-200'
+            }`}>
+            <h3 className={`font-['Poppins'] font-bold text-lg ${textTitle}`}>Edit Campaign details</h3>
+
+            <div className="flex flex-col gap-1">
+              <label className={`text-xs font-bold ${textMuted}`}>Campaign Name</label>
+              <input value={editingCampaign.name || ''} onChange={e => setEditingCampaign({ ...editingCampaign, name: e.target.value })} className={inputClass} />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={`text-xs font-bold ${textMuted}`}>Description</label>
+              <textarea rows={3} value={editingCampaign.description || ''} onChange={e => setEditingCampaign({ ...editingCampaign, description: e.target.value })} className={`${inputClass} resize-none`} />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={`text-xs font-bold ${textMuted}`}>Location</label>
+              <input value={editingCampaign.location || ''} onChange={e => setEditingCampaign({ ...editingCampaign, location: e.target.value })} className={inputClass} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label className={`text-xs font-bold ${textMuted}`}>Max Volunteers</label>
+                <input type="number" min="1" value={editingCampaign.maxParticipants || 10} onChange={e => setEditingCampaign({ ...editingCampaign, maxParticipants: e.target.value })} className={inputClass} />
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-2">
+              <button type="button" onClick={() => setEditingCampaign(null)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${isDark ? 'border-white/10 text-white' : 'border-gray-200 text-gray-700'}`}>Cancel</button>
+              <button type="submit" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#13221B] to-[#3D6A53] text-white text-xs font-bold">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

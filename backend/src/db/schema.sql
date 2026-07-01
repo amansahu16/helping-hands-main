@@ -386,14 +386,14 @@ SELECT
     np.certificate_url,
     np.area_of_work,
     nd.description,
-    nd.achievements,
-    nd.work_done,
+    NULL::text AS achievements,
+    NULL::text AS work_done,
     nf.upi_id,
     nd.website_url,
-    nf.bank_name,
-    nf.account_holder,
-    nf.account_number,
-    nf.ifsc,
+    NULL::text AS bank_name,
+    NULL::text AS account_holder,
+    NULL::text AS account_number,
+    NULL::text AS ifsc,
     nf.virtual_balance,
     a.otp_verified,
     np.verified,
@@ -414,11 +414,11 @@ BEGIN
     INSERT INTO public.ngo_profiles (account_id, registration_number, certificate_url, area_of_work, verified, location, latitude, longitude)
     VALUES (NEW.id, NEW.registration_number, NEW.certificate_url, NEW.area_of_work, COALESCE(NEW.verified, FALSE), NEW.location, NEW.latitude, NEW.longitude);
 
-    INSERT INTO public.ngo_details (account_id, description, achievements, work_done, website_url)
-    VALUES (NEW.id, NEW.description, NEW.achievements, NEW.work_done, NEW.website_url);
+    INSERT INTO public.ngo_details (account_id, description, website_url)
+    VALUES (NEW.id, NEW.description, NEW.website_url);
 
-    INSERT INTO public.ngo_financials (account_id, upi_id, bank_name, account_holder, account_number, ifsc, virtual_balance)
-    VALUES (NEW.id, NEW.upi_id, NEW.bank_name, NEW.account_holder, NEW.account_number, NEW.ifsc, COALESCE(NEW.virtual_balance, 0));
+    INSERT INTO public.ngo_financials (account_id, upi_id, virtual_balance)
+    VALUES (NEW.id, NEW.upi_id, COALESCE(NEW.virtual_balance, 0));
 
     RETURN NEW;
 END;
@@ -452,22 +452,16 @@ BEGIN
         latitude = EXCLUDED.latitude,
         longitude = EXCLUDED.longitude;
 
-    INSERT INTO public.ngo_details (account_id, description, achievements, work_done, website_url)
-    VALUES (OLD.id, NEW.description, NEW.achievements, NEW.work_done, NEW.website_url)
+    INSERT INTO public.ngo_details (account_id, description, website_url)
+    VALUES (OLD.id, NEW.description, NEW.website_url)
     ON CONFLICT (account_id) DO UPDATE SET
         description = EXCLUDED.description,
-        achievements = EXCLUDED.achievements,
-        work_done = EXCLUDED.work_done,
         website_url = EXCLUDED.website_url;
 
-    INSERT INTO public.ngo_financials (account_id, upi_id, bank_name, account_holder, account_number, ifsc, virtual_balance)
-    VALUES (OLD.id, NEW.upi_id, NEW.bank_name, NEW.account_holder, NEW.account_number, NEW.ifsc, COALESCE(NEW.virtual_balance, 0))
+    INSERT INTO public.ngo_financials (account_id, upi_id, virtual_balance)
+    VALUES (OLD.id, NEW.upi_id, COALESCE(NEW.virtual_balance, 0))
     ON CONFLICT (account_id) DO UPDATE SET
         upi_id = EXCLUDED.upi_id,
-        bank_name = EXCLUDED.bank_name,
-        account_holder = EXCLUDED.account_holder,
-        account_number = EXCLUDED.account_number,
-        ifsc = EXCLUDED.ifsc,
         virtual_balance = EXCLUDED.virtual_balance;
 
     RETURN NEW;
@@ -648,7 +642,7 @@ SELECT
     id,
     campaign_id,
     account_id AS user_id,
-    identity_number,
+    identity_number AS code,
     status,
     joined_at
 FROM public.campaign_participants;
@@ -657,7 +651,7 @@ CREATE OR REPLACE FUNCTION compat.insert_campaign_participant()
 RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO public.campaign_participants (id, campaign_id, account_id, identity_number, status, joined_at)
-    VALUES (COALESCE(NEW.id, uuid_generate_v4()), NEW.campaign_id, NEW.user_id, NEW.identity_number, COALESCE(NEW.status, 'PENDING'), COALESCE(NEW.joined_at, CURRENT_TIMESTAMP))
+    VALUES (COALESCE(NEW.id, uuid_generate_v4()), NEW.campaign_id, NEW.user_id, NEW.code, COALESCE(NEW.status, 'PENDING'), COALESCE(NEW.joined_at, CURRENT_TIMESTAMP))
     RETURNING id INTO NEW.id;
     RETURN NEW;
 END;
@@ -673,7 +667,7 @@ BEGIN
     UPDATE public.campaign_participants SET
         campaign_id = NEW.campaign_id,
         account_id = NEW.user_id,
-        identity_number = NEW.identity_number,
+        identity_number = NEW.code,
         status = NEW.status,
         joined_at = NEW.joined_at
     WHERE id = OLD.id;
@@ -726,8 +720,8 @@ SELECT
     d.status,
     d.payment_status,
     d.settlement_status,
-    d.razorpay_order_id,
-    d.razorpay_payment_id,
+    NULL::text AS razorpay_order_id,
+    NULL::text AS razorpay_payment_id,
     d.payment_date,
     d.created_at
 FROM public.donations d
@@ -743,13 +737,11 @@ BEGIN
 
     INSERT INTO public.donations (
         id, donor_id, recipient_ngo_id, title, amount, transaction_id, 
-        payment_status, status, razorpay_order_id, razorpay_payment_id, 
-        payment_date, settlement_status, description, created_at
+        payment_status, status, payment_date, settlement_status, description, created_at
     )
     VALUES (
         COALESCE(NEW.id, uuid_generate_v4()), v_donor_id, NEW.recipient_ngo_id, NEW.title, NEW.amount, NEW.transaction_id, 
-        COALESCE(NEW.payment_status, 'PENDING'), COALESCE(NEW.status, 'PENDING'), NEW.razorpay_order_id, NEW.razorpay_payment_id, 
-        NEW.payment_date, COALESCE(NEW.settlement_status, 'SIMULATED_SUCCESS'), NEW.description, COALESCE(NEW.created_at, CURRENT_TIMESTAMP)
+        COALESCE(NEW.payment_status, 'PENDING'), COALESCE(NEW.status, 'PENDING'), NEW.payment_date, COALESCE(NEW.settlement_status, 'SIMULATED_SUCCESS'), NEW.description, COALESCE(NEW.created_at, CURRENT_TIMESTAMP)
     )
     RETURNING id INTO NEW.id;
 
@@ -785,8 +777,6 @@ BEGIN
         transaction_id = NEW.transaction_id,
         payment_status = NEW.payment_status,
         status = NEW.status,
-        razorpay_order_id = NEW.razorpay_order_id,
-        razorpay_payment_id = NEW.razorpay_payment_id,
         payment_date = NEW.payment_date,
         settlement_status = NEW.settlement_status,
         description = NEW.description,

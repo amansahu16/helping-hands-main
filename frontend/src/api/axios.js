@@ -22,6 +22,8 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('hh_token')
       localStorage.removeItem('hh_user')
+      localStorage.removeItem('hh_role')
+      window.location.href = '/'
     }
     return Promise.reject(err)
   }

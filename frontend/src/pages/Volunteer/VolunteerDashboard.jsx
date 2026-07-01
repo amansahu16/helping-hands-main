@@ -75,50 +75,80 @@ export default function VolunteerDashboard() {
     if (!user) return
     setLoadingData(true)
     try {
-      // 1. Fetch Profile
-      const { data: profile } = await api.get('/users')
-      setProfileForm({
-        name: profile.name || '',
-        phoneNumber: profile.phoneNumber || '',
-        dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().split('T')[0] : '',
-        location: profile.location || '',
-        occupation: profile.occupation || '',
-        photoUrl: profile.photoUrl || '',
-        latitude: profile.latitude || null,
-        longitude: profile.longitude || null
-      })
+      const [
+        profileRes,
+        donationsRes,
+        statsRes,
+        adoptionsRes,
+        incomingRes,
+        rescuesRes,
+        campaignsRes
+      ] = await Promise.allSettled([
+        api.get('/users'),
+        api.get('/users/donations'),
+        api.get('/users/donations/stats'),
+        api.get('/users/adoptions'),
+        api.get('/animals/adoptions/incoming'),
+        api.get('/users/rescues'),
+        api.get('/users/campaigns')
+      ])
 
-      // 2. Fetch Donations
-      const { data: donations } = await api.get('/users/donations')
-      setMyDonations(donations || [])
-
-      // Fetch User Donation Stats
-      try {
-        const { data: stats } = await api.get('/users/donations/stats')
-        setDonationStats(stats || { totalDonations: 0, totalAmount: 0, ngoSummary: [], recent: [] })
-      } catch (statsErr) {
-        console.error('Failed to load user donation stats:', statsErr)
+      // 1. Profile
+      let profile = {}
+      if (profileRes.status === 'fulfilled') {
+        profile = profileRes.value.data
+        setProfileForm({
+          name: profile.name || '',
+          phoneNumber: profile.phoneNumber || '',
+          dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().split('T')[0] : '',
+          location: profile.location || '',
+          occupation: profile.occupation || '',
+          photoUrl: profile.photoUrl || '',
+          latitude: profile.latitude || null,
+          longitude: profile.longitude || null
+        })
       }
 
-      // 3. Fetch Adoptions
-      const { data: adoptions } = await api.get('/users/adoptions')
-      setMyAdoptions(adoptions || [])
-
-      try {
-        const { data: incoming } = await api.get('/animals/adoptions/incoming')
-        setIncomingAdoptions(incoming || [])
-      } catch (incErr) {
-        console.error('Failed to load incoming adoptions:', incErr)
+      // 2. Donations
+      let donations = []
+      if (donationsRes.status === 'fulfilled') {
+        donations = donationsRes.value.data || []
+        setMyDonations(donations)
       }
 
-      // 4. Fetch Rescues
-      const { data: rescues } = await api.get('/users/rescues')
-      setMyRescues(rescues || [])
+      // Stats
+      if (statsRes.status === 'fulfilled') {
+        setDonationStats(statsRes.value.data || { totalDonations: 0, totalAmount: 0, ngoSummary: [], recent: [] })
+      } else {
+        setDonationStats({ totalDonations: 0, totalAmount: 0, ngoSummary: [], recent: [] })
+      }
 
-      // 5. Fetch Campaigns
-      const { data: campaigns } = await api.get('/users/campaigns')
-      setMyOrganized(campaigns.organized || [])
-      setMyJoined(campaigns.joined || [])
+      // 3. Adoptions
+      let adoptions = []
+      if (adoptionsRes.status === 'fulfilled') {
+        adoptions = adoptionsRes.value.data || []
+        setMyAdoptions(adoptions)
+      }
+
+      // Incoming Adoptions
+      if (incomingRes.status === 'fulfilled') {
+        setIncomingAdoptions(incomingRes.value.data || [])
+      }
+
+      // 4. Rescues
+      let rescues = []
+      if (rescuesRes.status === 'fulfilled') {
+        rescues = rescuesRes.value.data || []
+        setMyRescues(rescues)
+      }
+
+      // 5. Campaigns
+      let campaigns = { organized: [], joined: [] }
+      if (campaignsRes.status === 'fulfilled') {
+        campaigns = campaignsRes.value.data || { organized: [], joined: [] }
+        setMyOrganized(campaigns.organized || [])
+        setMyJoined(campaigns.joined || [])
+      }
 
       // 6. Calculate Points
       const organizedCount = (campaigns.organized || []).length
