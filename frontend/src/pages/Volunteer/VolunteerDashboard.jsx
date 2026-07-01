@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   User, Mail, Phone, Calendar, MapPin, Briefcase, Heart,
   Sparkles, Shield, Edit3, Trash2, CheckCircle, Clock, XCircle,
-  Loader2, Star, Save, Plus, ArrowRight, MessageSquare
+  Loader2, Star, Save, Plus, ArrowRight, MessageSquare, Award, List
 } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
@@ -576,22 +576,22 @@ export default function VolunteerDashboard() {
             <div className="lg:col-span-1 flex flex-col gap-2">
               <div className={`border rounded-2xl p-4 flex flex-col gap-1.5 ${cardBg}`}>
                 <p className={`text-[10px] uppercase font-extrabold tracking-widest px-3 mb-2 ${textMuted}`}>Dashboard Sections</p>
-                <button onClick={() => { setActiveTab('profile'); setSelectedCampaignForManage(null) }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'profile')}`}>
+                <button onClick={() => { setActiveTab('profile') }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'profile')}`}>
                   <User size={14} /> Edit Profile Details
                 </button>
-                <button onClick={() => { setActiveTab('campaigns'); setSelectedCampaignForManage(null) }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'campaigns')}`}>
+                <button onClick={() => { setActiveTab('campaigns') }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'campaigns')}`}>
                   <List size={14} /> My Campaigns & Drives
                 </button>
-                <button onClick={() => { setActiveTab('donations'); setSelectedCampaignForManage(null) }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'donations')}`}>
+                <button onClick={() => { setActiveTab('donations') }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'donations')}`}>
                   <Heart size={14} /> My Donation Listings
                 </button>
-                <button onClick={() => { setActiveTab('rescues'); setSelectedCampaignForManage(null) }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'rescues')}`}>
+                <button onClick={() => { setActiveTab('rescues') }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'rescues')}`}>
                   <Shield size={14} /> Reported Rescues
                 </button>
-                <button onClick={() => { setActiveTab('adoptions'); setSelectedCampaignForManage(null) }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'adoptions')}`}>
+                <button onClick={() => { setActiveTab('adoptions') }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'adoptions')}`}>
                   <Sparkles size={14} /> Pet Adoptions
                 </button>
-                <button onClick={() => { setActiveTab('feedback'); setSelectedCampaignForManage(null) }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'feedback')}`}>
+                <button onClick={() => { setActiveTab('feedback') }} className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${sidebarBtn(activeTab === 'feedback')}`}>
                   <MessageSquare size={14} /> Rate Platform
                 </button>
               </div>
