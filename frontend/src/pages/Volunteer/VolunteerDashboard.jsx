@@ -70,6 +70,11 @@ export default function VolunteerDashboard() {
   const [editingRescue, setEditingRescue] = useState(null)
   const [editingCampaign, setEditingCampaign] = useState(null)
 
+  // Feedback State
+  const [feedback, setFeedback] = useState({ rating: 5, content: '' })
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false)
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
+
   // Fetch all user operations
   const loadUserData = useCallback(async () => {
     if (!user) return
@@ -812,7 +817,7 @@ export default function VolunteerDashboard() {
                       <div className={`border rounded-2xl p-6 ${cardBg}`}>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className={`font-['Poppins'] font-bold text-lg flex items-center gap-2 ${textTitle}`}>
-                            <Clipboard size={16} className="text-[#3D6A53]" />
+                            <Calendar size={16} className="text-[#3D6A53]" />
                             <span>Campaigns I Organise (Head)</span>
                           </h3>
                           <Link to="/volunteer/start" className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#43E97B] to-[#13221B] text-white text-xs font-bold hover:-translate-y-0.5 transition-all">
@@ -870,7 +875,7 @@ export default function VolunteerDashboard() {
                       {/* Campaigns Joined */}
                       <div className={`border rounded-2xl p-6 ${cardBg}`}>
                         <h3 className={`font-['Poppins'] font-bold text-lg mb-4 flex items-center gap-2 ${textTitle}`}>
-                          <Clipboard size={16} className="text-[#3D6A53]" />
+                          <Calendar size={16} className="text-[#3D6A53]" />
                           <span>Campaigns I Joined (Volunteered)</span>
                         </h3>
 
