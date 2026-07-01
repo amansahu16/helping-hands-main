@@ -21,8 +21,6 @@ const connectDB = async () => {
             ALTER TABLE donations ADD COLUMN IF NOT EXISTS razorpay_order_id VARCHAR(100);
             ALTER TABLE donations ADD COLUMN IF NOT EXISTS razorpay_payment_id VARCHAR(100);
             ALTER TABLE donations ADD COLUMN IF NOT EXISTS payment_date TIMESTAMP;
-            ALTER TABLE donations ADD COLUMN IF NOT EXISTS ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL;
-            ALTER TABLE donations ADD COLUMN IF NOT EXISTS transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
             ALTER TABLE ngos ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
             ALTER TABLE ngos ADD COLUMN IF NOT EXISTS account_holder VARCHAR(150);

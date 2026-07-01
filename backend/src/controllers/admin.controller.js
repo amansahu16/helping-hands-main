@@ -163,78 +163,58 @@ async function resetAdminPassword(req, res) {
 
 async function getStats(req, res) {
   try {
-    const queryHelper = async (queryText, params = []) => {
-      const res = await pool.query(queryText, params);
-      return parseInt(res.rows[0].count, 10);
-    };
+    const { rows } = await pool.query(`
+      SELECT
+        (SELECT COUNT(*)::int FROM donations) AS donations_count,
+        (SELECT COUNT(*)::int FROM animals) AS animals_count,
+        (SELECT COUNT(*)::int FROM ngos) AS ngos_count,
+        (SELECT COUNT(*)::int FROM users) AS users_count,
+        (SELECT COUNT(*)::int FROM campaigns) AS campaigns_count,
+        (SELECT COUNT(*)::int FROM complaints) AS complaints_count,
+        (SELECT COUNT(*)::int FROM rescue_requests WHERE status = 'OPEN') AS open_rescues,
+        (SELECT COUNT(*)::int FROM rescue_requests WHERE status = 'ASSIGNED') AS active_rescues,
+        (SELECT COUNT(*)::int FROM rescue_requests WHERE status IN ('RESOLVED', 'CLOSED')) AS resolved_rescues,
+        (SELECT COUNT(*)::int FROM campaigns WHERE status = 'COMPLETED') AS completed_campaigns,
+        (SELECT COUNT(*)::int FROM campaigns WHERE status = 'ONGOING') AS ongoing_campaigns,
+        (SELECT COUNT(*)::int FROM campaigns WHERE status = 'PLANNED') AS planned_campaigns,
+        (SELECT COUNT(*)::int FROM adoptions WHERE status = 'COMPLETED') AS adopted_animals,
+        (SELECT COUNT(*)::int FROM campaigns WHERE type = 'ANIMAL_WELFARE' AND status = 'COMPLETED') AS animals_fed,
+        (SELECT COUNT(*)::int FROM donations WHERE status IN ('ACCEPTED', 'PICKED_UP', 'DELIVERED')) AS active_donations_count,
+        (SELECT COUNT(*)::int FROM donations WHERE amount IS NOT NULL) AS tx_count,
+        (SELECT COALESCE(SUM(amount), 0)::float FROM donations WHERE amount IS NOT NULL) AS tx_sum
+    `);
 
-    const [
-      donationsCount,
-      animalsCount,
-      ngosCount,
-      usersCount,
-      campaignsCount,
-      complaintsCount,
-      openRescues,
-      activeRescues,
-      resolvedRescues,
-      completedCampaigns,
-      ongoingCampaigns,
-      plannedCampaigns,
-      adoptedAnimals,
-      animalsFed,
-      activeDonationsCount,
-      transactionStats
-    ] = await Promise.all([
-      queryHelper("SELECT COUNT(*)::int AS count FROM donations"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM animals"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM ngos"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM users"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM complaints"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status = 'OPEN'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status = 'ASSIGNED'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status IN ('RESOLVED', 'CLOSED')"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE status = 'COMPLETED'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE status = 'ONGOING'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE status = 'PLANNED'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM adoptions WHERE status = 'COMPLETED'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE type = 'ANIMAL_WELFARE' AND status = 'COMPLETED'"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM donations WHERE status IN ('ACCEPTED', 'PICKED_UP', 'DELIVERED')"),
-      pool.query("SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::float AS sum FROM donations WHERE amount IS NOT NULL")
-    ]);
-
-    const txStats = transactionStats.rows[0];
+    const stats = rows[0];
 
     return res.json({
       core: {
-        donations: donationsCount,
-        animals: animalsCount,
-        ngos: ngosCount,
-        users: usersCount,
-        campaigns: campaignsCount,
-        complaints: complaintsCount,
+        donations: stats.donations_count,
+        animals: stats.animals_count,
+        ngos: stats.ngos_count,
+        users: stats.users_count,
+        campaigns: stats.campaigns_count,
+        complaints: stats.complaints_count,
       },
       rescues: {
-        open: openRescues,
-        active: activeRescues,
-        resolved: resolvedRescues,
+        open: stats.open_rescues,
+        active: stats.active_rescues,
+        resolved: stats.resolved_rescues,
       },
       campaigns: {
-        completed: completedCampaigns,
-        ongoing: ongoingCampaigns,
-        planned: plannedCampaigns,
+        completed: stats.completed_campaigns,
+        ongoing: stats.ongoing_campaigns,
+        planned: stats.planned_campaigns,
       },
       welfare: {
-        adopted: adoptedAnimals,
-        fed: animalsFed,
+        adopted: stats.adopted_animals,
+        fed: stats.animals_fed,
       },
       goods: {
-        circulated: activeDonationsCount,
+        circulated: stats.active_donations_count,
       },
       transactions: {
-        count: txStats.count || 0,
-        sum: txStats.sum || 0
+        count: stats.tx_count || 0,
+        sum: stats.tx_sum || 0
       }
     });
   } catch (err) {

@@ -108,15 +108,19 @@ CREATE TABLE IF NOT EXISTS donations (
     time_to TIMESTAMP,
     photos TEXT[],
     recipient_ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL,
-    ngo_id UUID REFERENCES ngos(id) ON DELETE SET NULL,
     amount NUMERIC(12, 2),
     transaction_id VARCHAR(100),
-    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     otp VARCHAR(10),
     reached_donor BOOLEAN DEFAULT FALSE,
     status VARCHAR(30) DEFAULT 'PENDING',
+    payment_status VARCHAR(30) DEFAULT 'PENDING',
+    settlement_status VARCHAR(50) DEFAULT 'SIMULATED_SUCCESS',
+    razorpay_order_id VARCHAR(100),
+    razorpay_payment_id VARCHAR(100),
+    payment_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- 7. Donation Items Table
 CREATE TABLE IF NOT EXISTS donation_items (
