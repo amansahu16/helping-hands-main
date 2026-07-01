@@ -52,6 +52,7 @@ export default function VolunteerDashboard() {
   const [myDonations, setMyDonations] = useState([])
   const [myRescues, setMyRescues] = useState([])
   const [myAdoptions, setMyAdoptions] = useState([])
+  const [incomingAdoptions, setIncomingAdoptions] = useState([])
   const [enteredOtps, setEnteredOtps] = useState({})
   const [verifyingOtp, setVerifyingOtp] = useState({})
   const [donationStats, setDonationStats] = useState({
@@ -102,6 +103,13 @@ export default function VolunteerDashboard() {
       // 3. Fetch Adoptions
       const { data: adoptions } = await api.get('/users/adoptions')
       setMyAdoptions(adoptions || [])
+
+      try {
+        const { data: incoming } = await api.get('/animals/adoptions/incoming')
+        setIncomingAdoptions(incoming || [])
+      } catch (incErr) {
+        console.error('Failed to load incoming adoptions:', incErr)
+      }
 
       // 4. Fetch Rescues
       const { data: rescues } = await api.get('/users/rescues')
@@ -323,6 +331,41 @@ export default function VolunteerDashboard() {
       alert('Campaign deleted successfully.')
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete campaign.')
+    }
+  }
+
+  // Mark Campaign Completed handler
+  const handleMarkCampaignCompleted = async (campaignId) => {
+    if (!window.confirm('Are you sure you want to mark this campaign as completed?')) return
+    try {
+      await api.patch(`/campaigns/${campaignId}/status`, { status: 'COMPLETED' })
+      loadUserData()
+      alert('Campaign marked as completed!')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update campaign status.')
+    }
+  }
+
+  // Adoption confirmation/rejection handlers
+  const handleConfirmAdoption = async (animalId) => {
+    if (!window.confirm('Are you sure you want to confirm this adoption? This will mark the pet as adopted.')) return
+    try {
+      await api.post(`/animals/${animalId}/confirm-adoption`)
+      loadUserData()
+      alert('Adoption confirmed successfully!')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to confirm adoption.')
+    }
+  }
+
+  const handleRejectAdoption = async (animalId) => {
+    if (!window.confirm('Are you sure you want to decline this adoption request?')) return
+    try {
+      await api.post(`/animals/${animalId}/reject-adoption`)
+      loadUserData()
+      alert('Adoption request declined.')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to decline adoption.')
     }
   }
 
@@ -754,34 +797,38 @@ export default function VolunteerDashboard() {
                         ) : (
                           <div className="flex flex-col gap-4">
                             {myOrganized.map(c => (
-                              <div key={c.id} className={`p-4 rounded-xl border flex flex-wrap justify-between items-center gap-3 transition-colors ${selectedCampaignForManage?.id === c.id
-                                ? 'bg-[#13221B]/5 border-[#3D6A53]'
-                                : isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
-                                }`}>
+                              <div key={c.id} className={`p-4 rounded-xl border flex flex-wrap justify-between items-center gap-3 transition-colors ${
+                                  isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
+                                 }`}>
                                 <div className="flex-1 min-w-[200px]">
                                   <h4 className={`font-semibold text-sm ${textTitle}`}>{c.name}</h4>
                                   <p className={`text-[11px] mt-0.5 ${textMuted}`}>
                                     {c.location} • {c.timeFrom ? new Date(c.timeFrom).toLocaleDateString() : 'TBD'}
                                   </p>
-                                  <p className="text-[10px] text-[#43E97B] font-bold mt-1">
-                                    {c.currentParticipants || 0} approved volunteers
-                                  </p>
+                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                      c.status === 'COMPLETED' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                      c.status === 'CANCELLED' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                      'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                    }`}>
+                                      {c.status}
+                                    </span>
+                                    <span className="text-[10px] text-[#43E97B] font-bold">
+                                      {c.currentParticipants || 0} approved volunteers
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-center">
+                                  {c.status !== 'COMPLETED' && c.status !== 'CANCELLED' && (
+                                    <button onClick={() => handleMarkCampaignCompleted(c.id)} className="px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 text-xs font-bold cursor-pointer">
+                                      Mark Completed
+                                    </button>
+                                  )}
                                   <button onClick={() => setEditingCampaign(c)} className="p-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20" title="Edit details">
                                     <Edit3 size={13} />
                                   </button>
                                   <button onClick={() => handleDeleteCampaign(c.id)} className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20" title="Delete campaign">
                                     <Trash2 size={13} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleManageCampaign(c)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${selectedCampaignForManage?.id === c.id
-                                      ? 'bg-[#13221B] border-[#13221B] text-white'
-                                      : 'border-[#13221B]/20 text-[#2E7D59] hover:bg-[#13221B]/5'
-                                      }`}
-                                  >
-                                    Manage Volunteers
                                   </button>
                                 </div>
                               </div>
@@ -789,84 +836,6 @@ export default function VolunteerDashboard() {
                           </div>
                         )}
                       </div>
-
-                      {/* Volunteer Coordinator section */}
-                      {selectedCampaignForManage && (
-                        <div className={`border rounded-2xl p-6 ${cardBg} animate-fade-in`}>
-                          <div className="flex justify-between items-center border-b pb-4 mb-4">
-                            <div>
-                              <h3 className={`font-['Poppins'] font-bold text-base ${textTitle}`}>
-                                Volunteers for: {selectedCampaignForManage.name}
-                              </h3>
-                              <p className={`text-[11px] ${textMuted}`}>Review volunteer applications and issue status codes.</p>
-                            </div>
-                            <button onClick={() => setSelectedCampaignForManage(null)} className={`text-xs ${textMuted} hover:text-[#13221B] font-bold`}>
-                              ✕ Close
-                            </button>
-                          </div>
-
-                          {participantsLoading ? (
-                            <div className="flex items-center gap-2 py-8 justify-center">
-                              <Loader2 size={20} className="animate-spin text-[#13221B]" />
-                              <span className={`text-xs ${textMuted}`}>Fetching volunteer applications…</span>
-                            </div>
-                          ) : participants.length === 0 ? (
-                            <p className={`text-xs text-center py-10 ${textMuted}`}>No volunteers have applied to join this campaign yet.</p>
-                          ) : (
-                            <div className="flex flex-col gap-4">
-                              {participants.map((p, idx) => {
-                                const v = p.user
-                                const ageVal = v ? calculateAge(v.dateOfBirth) : 'N/A'
-                                return (
-                                  <div key={p.id} className={`p-4 rounded-xl border flex flex-col gap-3 ${isDark ? 'bg-white/[0.01] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                                    <div className="flex justify-between items-start gap-2">
-                                      <div>
-                                        <h4 className={`font-bold text-sm ${textTitle}`}>{v?.name}</h4>
-                                        <p className={`text-xs ${textMuted}`}>{v?.occupation || 'Volunteer'} • Age: {ageVal}</p>
-                                      </div>
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${p.status === 'APPROVED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
-                                        p.status === 'PENDING' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-red-500/10 text-red-400'
-                                        }`}>
-                                        {p.status}
-                                      </span>
-                                    </div>
-                                    <div className={`grid sm:grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white border border-gray-100'} ${textMuted}`}>
-                                      <span> Email: <strong className={textTitle}>{v?.email}</strong></span>
-                                      <span> Phone: <strong className={textTitle}>{v?.phoneNumber || 'N/A'}</strong></span>
-                                      <span className="sm:col-span-2"> Location: <strong className={textTitle}>{v?.location || 'N/A'}</strong></span>
-                                    </div>
-
-                                    {p.status === 'PENDING' ? (
-                                      <div className="flex items-center gap-3 mt-2 flex-wrap">
-                                        <div className="flex items-center gap-1.5 flex-1 min-w-[180px]">
-                                          <span className={`text-[10px] font-bold ${textMuted}`}>CODE:</span>
-                                          <input
-                                            value={codes[p.id] || ''}
-                                            onChange={e => setCodes({ ...codes, [p.id]: e.target.value })}
-                                            placeholder="e.g. V-101"
-                                            className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold w-full ${isDark ? 'bg-[#0F0F2A] border-white/10 text-white' : 'bg-white border-[#C7D2FE]'}`}
-                                          />
-                                        </div>
-                                        <div className="flex gap-2">
-                                          <button onClick={() => handleReject(p.id)} disabled={actionLoading[p.id]} className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20"><XCircle size={14} /></button>
-                                          <button onClick={() => handleApprove(p.id, codes[p.id])} disabled={actionLoading[p.id]} className="px-4 py-2 rounded-xl bg-[#43E97B] text-white text-xs font-bold hover:bg-[#3D6A53]">Approve</button>
-                                        </div>
-                                      </div>
-                                    ) : p.status === 'APPROVED' ? (
-                                      <div className="flex items-center justify-between p-2 bg-[#43E97B]/5 rounded-lg border border-[#43E97B]/20">
-                                        <p className="text-[11px] text-[#43E97B] font-semibold">Approved Code: <span className="font-mono font-bold bg-[#13221B] text-white px-2 py-0.5 rounded">{p.code}</span></p>
-                                        <button onClick={() => handleReject(p.id)} className="text-[10px] text-red-400 hover:underline font-bold">Decline</button>
-                                      </div>
-                                    ) : (
-                                      <p className="text-[11px] text-red-400 italic">This application has been declined.</p>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       {/* Campaigns Joined */}
                       <div className={`border rounded-2xl p-6 ${cardBg}`}>
@@ -992,17 +961,17 @@ export default function VolunteerDashboard() {
                                 {d.pickupAddress && <span className="sm:col-span-3"> Pickup Address: <strong className={textTitle}>{d.pickupAddress}</strong></span>}
                               </div>
 
-                              {d.pickupType === 'VOLUNTEER' && d.status === 'ACCEPTED' && (
+                              {d.category !== 'MONEY' && d.status === 'ACCEPTED' && (
                                 <div className="p-4 rounded-xl border flex flex-col gap-3 border-yellow-500/20 bg-yellow-500/[0.02] text-xs">
                                   <div className="flex justify-between items-center flex-wrap gap-2">
                                     <div>
                                       <p className={`font-bold text-[#FFB347]`}>
-                                        {d.reachedDonor ? ' NGO Volunteer Has Reached!' : ' Volunteer Pickup Scheduled'}
+                                        {d.reachedDonor ? ' Receiver Has Reached!' : ' Handover Scheduled'}
                                       </p>
                                       <p className={textMuted}>
                                         {d.reachedDonor
-                                          ? 'Ask the volunteer for their OTP code to verify pickup.'
-                                          : 'When the volunteer meets you, they will share their OTP.'}
+                                          ? 'Ask the receiver for their OTP code to verify handover.'
+                                          : 'When you meet the receiver, ask them for the OTP code to enter here.'}
                                       </p>
                                     </div>
                                   </div>
@@ -1177,6 +1146,52 @@ export default function VolunteerDashboard() {
                           ))}
                         </div>
                       )}
+
+                      <div className="mt-8 border-t pt-6 border-white/5">
+                        <h3 className={`font-['Poppins'] font-bold text-lg mb-4 flex items-center gap-2 ${textTitle}`}>
+                          <Heart size={16} className="text-[#FF8FA3]" />
+                          <span>Adoption Requests for My Posted Pets</span>
+                        </h3>
+
+                        {incomingAdoptions.length === 0 ? (
+                          <p className={`text-sm text-center py-6 ${textMuted}`}>No adoption requests received yet for your posted pets.</p>
+                        ) : (
+                          <div className="flex flex-col gap-4">
+                            {incomingAdoptions.map(req => (
+                              <div key={req.id} className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between sm:items-center gap-3 ${isDark ? 'bg-white/[0.01] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                                <div>
+                                  <h4 className={`font-semibold text-sm ${textTitle}`}>Request for: {req.animalName || 'Unnamed Pet'}</h4>
+                                  <p className={`text-xs ${textMuted}`}>Category: {req.animalCategory}</p>
+                                  <div className={`mt-2 p-2 rounded text-[11px] ${isDark ? 'bg-white/5' : 'bg-gray-100'} ${textTitle}`}>
+                                    <p><strong>Adopter:</strong> {req.adopterName}</p>
+                                    <p><strong>Email:</strong> {req.adopterEmail}</p>
+                                    <p><strong>Phone:</strong> {req.adopterPhone || 'N/A'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                    req.status === 'ADOPTED' || req.status === 'COMPLETED' ? 'bg-[#43E97B]/10 text-[#43E97B]' :
+                                    req.status === 'PENDING_ADOPTION' || req.status === 'IN_PROGRESS' ? 'bg-[#FFB347]/10 text-[#FFB347]' : 'bg-red-500/10 text-red-400'
+                                  }`}>
+                                    {req.status === 'PENDING_ADOPTION' ? 'PENDING CONFIRMATION' : req.status}
+                                  </span>
+                                  
+                                  {(req.status === 'PENDING_ADOPTION' || req.status === 'IN_PROGRESS') && (
+                                    <div className="flex gap-2 mt-1">
+                                      <button onClick={() => handleConfirmAdoption(req.animalId)} className="px-3 py-1.5 rounded-lg bg-[#43E97B] text-white text-xs font-bold hover:opacity-90 transition-all cursor-pointer">
+                                        Confirm
+                                      </button>
+                                      <button onClick={() => handleRejectAdoption(req.animalId)} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold hover:bg-red-500/20 transition-all cursor-pointer">
+                                        Decline
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 

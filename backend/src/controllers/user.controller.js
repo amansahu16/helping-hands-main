@@ -225,7 +225,7 @@ async function getMyRescueRequests(req, res) {
 async function getMyCampaigns(req, res) {
   try {
     const { rows: orgRows } = await pool.query(
-      "SELECT * FROM campaigns WHERE organizer_id = $1 ORDER BY created_at DESC",
+      "SELECT * FROM campaigns WHERE organizer_user_id = $1 ORDER BY created_at DESC",
       [req.user.id]
     );
     const organized = mapRows(orgRows);
@@ -238,7 +238,7 @@ async function getMyCampaigns(req, res) {
               c.status AS "campaign_status", c.created_at AS "campaign_created_at"
        FROM campaign_participants cp
        LEFT JOIN campaigns c ON cp.campaign_id = c.id
-       WHERE cp.account_id = $1
+       WHERE cp.user_id = $1
        ORDER BY cp.joined_at DESC`,
       [req.user.id]
     );

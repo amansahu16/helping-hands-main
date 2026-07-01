@@ -162,3 +162,34 @@ export const verifyOtp = async (email, otp) => {
 
   return true;
 };
+
+// Send Adoption Notification Email
+export const sendAdoptionNotification = async (email, adopterName, animalName) => {
+  setImmediate(() => {
+    transporter.sendMail({
+      from: `"Helping Hands" <${process.env.SENDER_EMAIL}>`,
+      to: email,
+      subject: "Helping Hands - Someone wants to adopt your pet!",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; line-height: 1.6; color: #1E1B4B;">
+          <h2 style="color: #3D6A53;">Helping Hands Platform</h2>
+          <h3>Good News!</h3>
+          <p>Hi there,</p>
+          <p>Someone wants to adopt <strong>${animalName}</strong>, the animal listing you posted on Helping Hands!</p>
+          <p><strong>Adopter Details:</strong></p>
+          <ul>
+            <li><strong>Name:</strong> ${adopterName}</li>
+          </ul>
+          <p>Please log in to your dashboard to view the full request, contact the adopter, and confirm or complete the adoption process.</p>
+          <p>Best regards,<br/>The Helping Hands Team</p>
+        </div>
+      `,
+    })
+      .then(() => {
+        console.log(`✅ Adoption notification email sent to ${email}`);
+      })
+      .catch((error) => {
+        console.error(`❌ Failed to send adoption notification:`, error.message);
+      });
+  });
+};

@@ -126,6 +126,11 @@ async function createDonation(req, res) {
     const recNgoId = (recipientNgoId && recipientNgoId.trim() !== "") ? recipientNgoId : null;
     const amt = amount ? Number(amount) : null;
 
+    let finalOtp = otp;
+    if (!finalOtp && category && category.toUpperCase() !== "MONEY") {
+      finalOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO donations (
         id, donor_id, donor_ngo_id, title, category, condition, description, quantity, persons_served,
@@ -154,7 +159,7 @@ async function createDonation(req, res) {
         recNgoId,
         amt,
         transactionId || null,
-        otp || null,
+        finalOtp || null,
         reachedDonor || false,
       ]
     );

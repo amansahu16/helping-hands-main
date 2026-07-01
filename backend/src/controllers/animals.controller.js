@@ -3,6 +3,7 @@
 import pool, { mapRowKeys, mapRows } from "../config/db.js";
 import crypto from "crypto";
 import { uploadMultipleImages } from "../utils/cloudinary.js";
+import { sendAdoptionNotification } from "../services/otp.service.js";
  
 async function listAnimals(req, res) {
   try {
@@ -240,9 +241,35 @@ async function initiateAdoption(req, res) {
         [adoptionId, animal.id, req.user.id, animal.postedByNgoId ?? null]
       );
 
-      await client.query("UPDATE animals SET status = 'ADOPTED' WHERE id = $1", [animal.id]);
+      // Trigger maps compat.adoptions view to update incidents.status to PENDING_ADOPTION
       
       await client.query("COMMIT");
+
+      // Notify the poster via email
+      let posterEmail = null;
+      let posterName = null;
+      if (animal.postedByUserId) {
+        const { rows: uRows } = await pool.query("SELECT email, name FROM accounts WHERE id = $1", [animal.postedByUserId]);
+        if (uRows[0]) {
+          posterEmail = uRows[0].email;
+          posterName = uRows[0].name;
+        }
+      } else if (animal.postedByNgoId) {
+        const { rows: nRows } = await pool.query("SELECT email, name FROM accounts WHERE id = $1", [animal.postedByNgoId]);
+        if (nRows[0]) {
+          posterEmail = nRows[0].email;
+          posterName = nRows[0].name;
+        }
+      }
+
+      if (posterEmail) {
+        try {
+          await sendAdoptionNotification(posterEmail, req.user.name, animal.name || "Unnamed Pet");
+        } catch (mailErr) {
+          console.warn("Mail send skipped:", mailErr.message);
+        }
+      }
+
       const adoption = mapRowKeys(insertRes.rows[0]);
       return res.status(201).json(adoption);
     } catch (txErr) {
@@ -255,7 +282,106 @@ async function initiateAdoption(req, res) {
     return res.status(500).json({ message: err.message });
   }
 }
- 
+
+async function confirmAdoption(req, res) {
+  try {
+    const { id } = req.params;
+    const { rows: checkRows } = await pool.query("SELECT * FROM animals WHERE id = $1", [id]);
+    const animal = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
+    if (!animal) return res.status(404).json({ message: "Animal not found" });
+
+    const isOwner = (animal.postedByUserId === req.user.id) || (animal.postedByNgoId === req.user.id);
+    if (!isOwner) return res.status(403).json({ message: "Only the owner who posted the animal can confirm adoption" });
+
+    if (animal.status !== "PENDING_ADOPTION") {
+      return res.status(400).json({ message: "No pending adoption request for this animal" });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Update animal status to ADOPTED
+      await client.query("UPDATE incidents SET status = 'ADOPTED' WHERE id = $1", [id]);
+      
+      // Update adopted_at in resolution
+      await client.query(
+        "UPDATE incident_resolutions SET adopted_at = NOW() WHERE incident_id = $1",
+        [id]
+      );
+
+      await client.query("COMMIT");
+      return res.json({ message: "Adoption completed and confirmed successfully!" });
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function rejectAdoption(req, res) {
+  try {
+    const { id } = req.params;
+    const { rows: checkRows } = await pool.query("SELECT * FROM animals WHERE id = $1", [id]);
+    const animal = checkRows[0] ? mapRowKeys(checkRows[0]) : null;
+    if (!animal) return res.status(404).json({ message: "Animal not found" });
+
+    const isOwner = (animal.postedByUserId === req.user.id) || (animal.postedByNgoId === req.user.id);
+    if (!isOwner) return res.status(403).json({ message: "Only the owner who posted the animal can reject adoption" });
+
+    if (animal.status !== "PENDING_ADOPTION") {
+      return res.status(400).json({ message: "No pending adoption request for this animal" });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Mark animal back as AVAILABLE
+      await client.query("UPDATE incidents SET status = 'AVAILABLE' WHERE id = $1", [id]);
+      
+      // Clear adopter_id and adopted_at in resolutions
+      await client.query(
+        "UPDATE incident_resolutions SET adopter_id = NULL, adopted_at = NULL WHERE incident_id = $1",
+        [id]
+      );
+
+      await client.query("COMMIT");
+      return res.json({ message: "Adoption request declined." });
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function getIncomingAdoptions(req, res) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT ad.*, 
+              an.name AS "animal_name", an.category AS "animal_category", an.photos AS "animal_photos",
+              u.name AS "adopter_name", u.email AS "adopter_email", u.phone_number AS "adopter_phone"
+       FROM adoptions ad
+       JOIN animals an ON ad.animal_id = an.id
+       JOIN accounts u ON ad.adopter_id = u.id
+       WHERE an.posted_by_user_id = $1 OR an.posted_by_ngo_id = $1
+       ORDER BY ad.created_at DESC`,
+      [req.user.id]
+    );
+    return res.json(mapRows(rows));
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
 export const animalController = {
-  listAnimals, getAnimalById, createAnimal, updateAnimal, deleteAnimal, initiateAdoption,
+  listAnimals, getAnimalById, createAnimal, updateAnimal, deleteAnimal, initiateAdoption, confirmAdoption, rejectAdoption, getIncomingAdoptions,
 };

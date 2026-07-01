@@ -110,7 +110,9 @@ function ShelterMap({ shelters, userLat, userLon }) {
   const markersRef = React.useRef([])
 
   useEffect(() => {
-    if (!mapRef.current || mapInstance || shelters.length === 0) return
+    if (!mapRef.current || shelters.length === 0) return
+    let map = null;
+
     import('leaflet').then((L) => {
       L = L.default || L
       if (L && L.Icon && L.Icon.Default && L.Icon.Default.prototype) {
@@ -122,7 +124,11 @@ function ShelterMap({ shelters, userLat, userLon }) {
         })
       }
 
-      const map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: false })
+      if (mapRef.current && mapRef.current._leaflet_id) {
+        return
+      }
+
+      map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: false })
       setMapInstance(map)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
@@ -136,7 +142,14 @@ function ShelterMap({ shelters, userLat, userLon }) {
       })
       L.marker([userLat, userLon], { icon: userIcon }).addTo(map).bindPopup('<b>Your Location</b>')
     })
-  }, [shelters])
+
+    return () => {
+      if (map) {
+        map.remove()
+        setMapInstance(null)
+      }
+    }
+  }, [shelters, userLat, userLon])
 
   useEffect(() => {
     if (!mapInstance) return

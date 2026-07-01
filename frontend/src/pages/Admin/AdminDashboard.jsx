@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Shield, Users, Building, Heart, Calendar, ShieldAlert,
   Save, Trash2, CheckCircle, Loader2, Mail, Phone, MapPin,
-  MessageSquare, Settings, Plus, X, Star
+  MessageSquare, Settings, Plus, X, Star, AlertOctagon, Globe
 } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'

@@ -2,6 +2,7 @@
 // ============================================================
 import pool, { mapRowKeys, mapRows } from "../config/db.js";
 import crypto from "crypto";
+import https from "https";
 
 // 15-second in-memory caches for stats to prevent DB pool exhaustion
 let statsCache = null;
@@ -359,7 +360,7 @@ async function getAnimalStats(req, res) {
 
     const [rescued, adopted, fed, shelters] = await Promise.all([
       queryHelper("SELECT COUNT(*)::int AS count FROM rescue_requests WHERE status IN ('RESOLVED', 'CLOSED')"),
-      queryHelper("SELECT COUNT(*)::int AS count FROM adoptions WHERE status = 'COMPLETED'"),
+      queryHelper("SELECT COUNT(*)::int AS count FROM adoptions WHERE status IN ('ADOPTED', 'COMPLETED')"),
       queryHelper("SELECT COUNT(*)::int AS count FROM campaigns WHERE type = 'ANIMAL_WELFARE' AND status = 'COMPLETED'"),
       queryHelper("SELECT COUNT(*)::int AS count FROM ngos WHERE area_of_work = 'Animal Welfare'")
     ]);
@@ -386,24 +387,80 @@ async function getOsmShelters(req, res) {
       return res.status(400).json({ message: "Query is required" });
     }
 
-    const response = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: "data=" + encodeURIComponent(query),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "HelpingHandsPlatform/1.0 (https://github.com/amansahu16/helping-hands-main)"
-      },
-    });
+    const postData = "data=" + encodeURIComponent(query);
+    let lastError = null;
+    let data = null;
 
-    if (!response.ok) {
-      throw new Error(`Overpass API responded with status ${response.status}`);
+    const endpoints = [
+      "overpass-api.de",
+      "lz4.overpass-api.de",
+      "overpass.kumi.systems"
+    ];
+
+    for (const host of endpoints) {
+      try {
+        const options = {
+          hostname: host,
+          port: 443,
+          path: "/api/interpreter",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": Buffer.byteLength(postData),
+            "User-Agent": "HelpingHandsPlatform/1.0 (https://github.com/amansahu16/helping-hands-main)"
+          },
+          timeout: 6000
+        };
+
+        const result = await new Promise((resolve, reject) => {
+          const request = https.request(options, (response) => {
+            let responseData = "";
+            response.on("data", (chunk) => {
+              responseData += chunk;
+            });
+            response.on("end", () => {
+              if (response.statusCode >= 200 && response.statusCode < 300) {
+                try {
+                  resolve(JSON.parse(responseData));
+                } catch (e) {
+                  reject(new Error("Failed to parse response from " + host));
+                }
+              } else {
+                reject(new Error(`Host ${host} responded with status ${response.statusCode}`));
+              }
+            });
+          });
+
+          request.on("error", (error) => {
+            reject(error);
+          });
+
+          request.on("timeout", () => {
+            request.destroy();
+            reject(new Error(`Timeout querying ${host}`));
+          });
+
+          request.write(postData);
+          request.end();
+        });
+
+        data = result;
+        break;
+      } catch (err) {
+        console.log(`Overpass API attempt on ${host} failed:`, err.message);
+        lastError = err;
+      }
     }
 
-    const data = await response.json();
-    return res.json(data);
+    if (data) {
+      return res.json(data);
+    }
+
+    console.log("All Overpass API endpoints failed. Last error:", lastError?.message);
+    return res.json({ elements: [] });
   } catch (err) {
-    console.error("Error calling Overpass API:", err.message);
-    return res.status(500).json({ message: "Failed to fetch from Overpass API", error: err.message });
+    console.error("getOsmShelters global error:", err.message);
+    return res.json({ elements: [] });
   }
 }
 

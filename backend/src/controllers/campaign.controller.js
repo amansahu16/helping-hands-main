@@ -127,7 +127,7 @@ async function getCampaignParticipants(req, res) {
              u.date_of_birth AS "user_dob", u.location AS "user_location", 
              u.photo_url AS "user_photoUrl", u.occupation AS "user_occupation"
       FROM campaign_participants cp
-      JOIN users u ON cp.account_id = u.id
+      JOIN users u ON cp.user_id = u.id
       WHERE cp.campaign_id = $1
     `;
     const { rows } = await pool.query(queryText, [req.params.id]);
@@ -328,7 +328,7 @@ async function joinCampaign(req, res) {
     const id = crypto.randomUUID();
 
     const { rows } = await pool.query(
-      `INSERT INTO campaign_participants (id, campaign_id, account_id, identity_number, status, joined_at)
+      `INSERT INTO campaign_participants (id, campaign_id, user_id, identity_number, status, joined_at)
        VALUES ($1, $2, $3, $4, 'PENDING', NOW()) RETURNING *`,
       [id, campaign.id, req.user.id, identityNumber || null]
     );
@@ -343,7 +343,7 @@ async function joinCampaign(req, res) {
 async function leaveCampaign(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM campaign_participants WHERE campaign_id = $1 AND account_id = $2",
+      "SELECT * FROM campaign_participants WHERE campaign_id = $1 AND user_id = $2",
       [req.params.id, req.user.id]
     );
     const participant = rows[0] ? mapRowKeys(rows[0]) : null;

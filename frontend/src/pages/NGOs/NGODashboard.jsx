@@ -706,10 +706,7 @@ export default function NGODashboard() {
                                   {d.status === 'PENDING' && (
                                     <button onClick={() => handleUpdateDonationStatus(d.id, 'ACCEPTED')} className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-[#2E7D59] hover:bg-green-500/20 text-[11px] font-bold">Accept Request</button>
                                   )}
-                                  {d.status === 'ACCEPTED' && d.pickupType !== 'VOLUNTEER' && (
-                                    <button onClick={() => handleUpdateDonationStatus(d.id, 'PICKED_UP')} className="px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20 text-[11px] font-bold">Mark Picked Up</button>
-                                  )}
-                                  {d.status === 'ACCEPTED' && d.pickupType === 'VOLUNTEER' && (
+                                  {d.status === 'ACCEPTED' && d.category !== 'MONEY' && (
                                     <div className="flex items-center gap-3">
                                       <span className="px-2.5 py-1.5 text-[11px] font-mono font-bold bg-[#13221B]/15 text-[#2E7D59] rounded-lg">Share OTP: {d.otp}</span>
                                       {!d.reachedDonor ? (
