@@ -12,17 +12,30 @@ async function migrate() {
     try {
         console.log("Starting PostgreSQL database migration...");
         
-        // Drop compat schema if exists to start fresh
-        console.log("Dropping existing compatibility schema if any...");
-        await pool.query("DROP SCHEMA IF EXISTS compat CASCADE");
+        // Parse command line arguments for override flags
+        const isForce = process.argv.includes("--force") || process.argv.includes("--reset");
 
-        // 1. Get all tables in the public schema
+        // 1. Get all tables in the public schema to see if data exists
         const tablesRes = await pool.query(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
         );
         const tables = tablesRes.rows.map(r => r.table_name);
         
         if (tables.length > 0) {
+            if (!isForce) {
+                console.log("\n=============================================================");
+                console.log("⚠️  WARNING: Database tables already exist and contain data!");
+                console.log("To prevent accidental deletion, migrations have been halted.");
+                console.log("If you explicitly want to reset the database and delete all data:");
+                console.log("  npm run db:migrate -- --force");
+                console.log("  OR");
+                console.log("  node src/db/migrate.js --force");
+                console.log("=============================================================\n");
+                
+                await pool.end();
+                process.exit(0);
+            }
+
             console.log(`Dropping existing tables: ${tables.join(", ")}`);
             for (const table of tables) {
                 await pool.query(`DROP TABLE IF EXISTS "${table}" CASCADE`);
@@ -30,6 +43,10 @@ async function migrate() {
         } else {
             console.log("No tables to drop.");
         }
+        
+        // Drop compat schema if exists to start fresh (only when empty or forced)
+        console.log("Dropping existing compatibility schema if any...");
+        await pool.query("DROP SCHEMA IF EXISTS compat CASCADE");
         
         // 2. Get all custom user-defined types (enums) in the public schema and drop them
         const typesRes = await pool.query(`
