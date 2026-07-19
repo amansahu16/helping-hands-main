@@ -349,7 +349,7 @@ async function deletePost(req, res) {
     const post = checkRows[0];
     if (!post) return res.status(404).json({ message: "Post not found" });
  
-    await pool.query("DELETE FROM ngo_posts WHERE id = $1", [req.params.postId]);
+    await pool.query("UPDATE platform_communications SET status = 'DELETED' WHERE id = $1", [req.params.postId]);
     return res.json({ message: "Post deleted" });
   } catch (err) {
     return res.status(500).json({ message: err.message });

@@ -199,8 +199,8 @@ async function deleteRescueRequest(req, res) {
     const isReporter = (rescue.reporterId === req.user.id) || (rescue.reporterNgoId === req.user.id);
     if (!isReporter) return res.status(403).json({ message: "Forbidden" });
  
-    await pool.query("DELETE FROM rescue_requests WHERE id = $1", [req.params.id]);
-    return res.json({ message: "Rescue request deleted" });
+    await pool.query("UPDATE incidents SET status = 'CANCELLED' WHERE id = $1", [req.params.id]);
+    return res.json({ message: "Rescue request cancelled" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

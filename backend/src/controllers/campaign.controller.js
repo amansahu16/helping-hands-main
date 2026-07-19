@@ -282,8 +282,8 @@ async function deleteCampaign(req, res) {
       (role === "ngo"  && campaign.organizerNgoId  === id);
     if (!isOrganizer) return res.status(403).json({ message: "Forbidden" });
  
-    await pool.query("DELETE FROM campaigns WHERE id = $1", [req.params.id]);
-    return res.json({ message: "Campaign deleted" });
+    await pool.query("UPDATE campaigns SET status = 'CANCELLED' WHERE id = $1", [req.params.id]);
+    return res.json({ message: "Campaign cancelled" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -329,7 +329,10 @@ async function joinCampaign(req, res) {
 
     const { rows } = await pool.query(
       `INSERT INTO campaign_participants (id, campaign_id, user_id, code, status, joined_at)
-       VALUES ($1, $2, $3, $4, 'PENDING', NOW()) RETURNING *`,
+       VALUES ($1, $2, $3, $4, 'PENDING', NOW())
+       ON CONFLICT (campaign_id, user_id) DO UPDATE
+       SET status = 'PENDING', joined_at = NOW(), code = EXCLUDED.code
+       RETURNING *`,
       [id, campaign.id, req.user.id, identityNumber || null]
     );
     
@@ -353,7 +356,7 @@ async function leaveCampaign(req, res) {
     try {
       await client.query("BEGIN");
       
-      await client.query("DELETE FROM campaign_participants WHERE id = $1", [participant.id]);
+      await client.query("UPDATE campaign_participants SET status = 'LEFT' WHERE id = $1", [participant.id]);
       
       if (participant.status === "APPROVED" || participant.status === "REGISTERED") {
         await client.query(

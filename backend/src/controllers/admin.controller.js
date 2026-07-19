@@ -320,20 +320,21 @@ async function deleteOperation(req, res) {
     const { type, id } = req.params;
 
     if (type === "campaign") {
-      await pool.query("DELETE FROM campaigns WHERE id = $1", [id]);
+      await pool.query("UPDATE campaigns SET status = 'CANCELLED' WHERE id = $1", [id]);
     } else if (type === "donation") {
-      await pool.query("DELETE FROM donations WHERE id = $1", [id]);
+      await pool.query("UPDATE donations SET status = 'CANCELLED' WHERE id = $1", [id]);
     } else if (type === "rescue") {
-      await pool.query("DELETE FROM rescue_requests WHERE id = $1", [id]);
-    } else if (type === "user") {
-      await pool.query("DELETE FROM users WHERE id = $1", [id]);
-    } else if (type === "ngo") {
-      await pool.query("DELETE FROM ngos WHERE id = $1", [id]);
+      await pool.query("UPDATE rescue_requests SET status = 'CANCELLED' WHERE id = $1", [id]);
+    } else if (type === "user" || type === "ngo") {
+      await pool.query(
+        "UPDATE accounts SET name = 'Deleted Account', email = 'deleted_' || id || '@deleted.com', password_hash = 'DELETED', phone_number = NULL WHERE id = $1",
+        [id]
+      );
     } else {
       return res.status(400).json({ message: "Invalid operation type" });
     }
 
-    return res.json({ message: `${type} deleted successfully` });
+    return res.json({ message: `${type} soft-deleted successfully` });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -429,7 +430,7 @@ async function addLocation(req, res) {
 async function deleteLocation(req, res) {
   try {
     const { id } = req.params;
-    await pool.query("DELETE FROM locations WHERE id = $1", [id]);
+    await pool.query("UPDATE system_registry SET registry_type = 'DELETED_LOCATION' WHERE id = $1", [id]);
     return res.json({ message: "Location deleted successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -493,9 +494,9 @@ async function deleteFeedback(req, res) {
   try {
     const { type, id } = req.params;
     if (type === "testimonial") {
-      await pool.query("DELETE FROM testimonials WHERE id = $1", [id]);
+      await pool.query("UPDATE user_feedbacks SET status = 'DELETED' WHERE id = $1", [id]);
     } else if (type === "message") {
-      await pool.query("DELETE FROM contact_messages WHERE id = $1", [id]);
+      await pool.query("UPDATE platform_communications SET status = 'DELETED' WHERE id = $1", [id]);
     } else {
       return res.status(400).json({ message: "Invalid type" });
     }
@@ -628,7 +629,7 @@ async function updateFaq(req, res) {
 async function deleteFaq(req, res) {
   try {
     const { id } = req.params;
-    await pool.query("DELETE FROM faqs WHERE id = $1", [id]);
+    await pool.query("UPDATE system_registry SET registry_type = 'DELETED_FAQ' WHERE id = $1", [id]);
     return res.json({ message: "FAQ deleted successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });

@@ -258,8 +258,8 @@ async function deleteDonation(req, res) {
       return res.status(409).json({ message: "Can only cancel PENDING donations" });
     }
  
-    await pool.query("DELETE FROM donations WHERE id = $1", [req.params.id]);
-    return res.json({ message: "Donation cancelled and deleted" });
+    await pool.query("UPDATE donations SET status = 'CANCELLED' WHERE id = $1", [req.params.id]);
+    return res.json({ message: "Donation cancelled" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

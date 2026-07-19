@@ -106,8 +106,11 @@ async function changePassword(req, res) {
  
 async function deleteAccount(req, res) {
   try {
-    await pool.query("DELETE FROM users WHERE id = $1", [req.user.id]);
-    return res.json({ message: "Account deleted" });
+    await pool.query(
+      "UPDATE accounts SET name = 'Deleted Account', email = 'deleted_' || id || '@deleted.com', password_hash = 'DELETED', phone_number = NULL WHERE id = $1",
+      [req.user.id]
+    );
+    return res.json({ message: "Account deactivated and anonymized" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

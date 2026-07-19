@@ -360,7 +360,12 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_user();
 CREATE OR REPLACE FUNCTION compat.delete_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.accounts WHERE id = OLD.id;
+    UPDATE public.accounts 
+    SET name = 'Deleted Account', 
+        email = 'deleted_' || id || '@deleted.com', 
+        password_hash = 'DELETED', 
+        phone_number = NULL 
+    WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -475,7 +480,12 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_ngo();
 CREATE OR REPLACE FUNCTION compat.delete_ngo()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.accounts WHERE id = OLD.id;
+    UPDATE public.accounts 
+    SET name = 'Deleted Account', 
+        email = 'deleted_' || id || '@deleted.com', 
+        password_hash = 'DELETED', 
+        phone_number = NULL 
+    WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -534,7 +544,12 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_admin();
 CREATE OR REPLACE FUNCTION compat.delete_admin()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.accounts WHERE id = OLD.id;
+    UPDATE public.accounts 
+    SET name = 'Deleted Account', 
+        email = 'deleted_' || id || '@deleted.com', 
+        password_hash = 'DELETED', 
+        phone_number = NULL 
+    WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -626,7 +641,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_campaign();
 CREATE OR REPLACE FUNCTION compat.delete_campaign()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.campaigns WHERE id = OLD.id;
+    UPDATE public.campaigns SET status = 'CANCELLED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -682,7 +697,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_campaign_participant();
 CREATE OR REPLACE FUNCTION compat.delete_campaign_participant()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.campaign_participants WHERE id = OLD.id;
+    UPDATE public.campaign_participants SET status = 'LEFT' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -818,7 +833,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_donation();
 CREATE OR REPLACE FUNCTION compat.delete_donation()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.donations WHERE id = OLD.id;
+    UPDATE public.donations SET status = 'CANCELLED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -933,7 +948,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_rescue_request();
 CREATE OR REPLACE FUNCTION compat.delete_rescue_request()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.incidents WHERE id = OLD.id;
+    UPDATE public.incidents SET status = 'CANCELLED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1014,7 +1029,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_animal();
 CREATE OR REPLACE FUNCTION compat.delete_animal()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.incidents WHERE id = OLD.id;
+    UPDATE public.incidents SET status = 'CANCELLED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1147,7 +1162,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_ngo_post();
 CREATE OR REPLACE FUNCTION compat.delete_ngo_post()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.platform_communications WHERE id = OLD.id;
+    UPDATE public.platform_communications SET status = 'DELETED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1204,7 +1219,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_ngo_review();
 CREATE OR REPLACE FUNCTION compat.delete_ngo_review()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.user_feedbacks WHERE id = OLD.id;
+    UPDATE public.user_feedbacks SET status = 'DELETED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1259,7 +1274,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_testimonial();
 CREATE OR REPLACE FUNCTION compat.delete_testimonial()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.user_feedbacks WHERE id = OLD.id;
+    UPDATE public.user_feedbacks SET status = 'DELETED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1322,7 +1337,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_newsletter();
 CREATE OR REPLACE FUNCTION compat.delete_newsletter()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.platform_communications WHERE id = OLD.id;
+    UPDATE public.platform_communications SET status = 'UNSUBSCRIBED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1395,7 +1410,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_contact_message();
 CREATE OR REPLACE FUNCTION compat.delete_contact_message()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.platform_communications WHERE id = OLD.id;
+    UPDATE public.platform_communications SET status = 'DELETED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1457,7 +1472,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_location();
 CREATE OR REPLACE FUNCTION compat.delete_location()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.system_registry WHERE id = OLD.id;
+    UPDATE public.system_registry SET registry_type = 'DELETED_LOCATION' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1513,7 +1528,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_system_setting();
 CREATE OR REPLACE FUNCTION compat.delete_system_setting()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.system_registry WHERE registry_type = 'SETTING' AND key_name = OLD.key;
+    UPDATE public.system_registry SET registry_type = 'DELETED_SETTING' WHERE registry_type = 'SETTING' AND key_name = OLD.key;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1596,7 +1611,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_complaint();
 CREATE OR REPLACE FUNCTION compat.delete_complaint()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.user_feedbacks WHERE id = OLD.id;
+    UPDATE public.user_feedbacks SET status = 'DELETED' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -1653,7 +1668,7 @@ FOR EACH ROW EXECUTE FUNCTION compat.update_faq();
 CREATE OR REPLACE FUNCTION compat.delete_faq()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM public.system_registry WHERE id = OLD.id;
+    UPDATE public.system_registry SET registry_type = 'DELETED_FAQ' WHERE id = OLD.id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;

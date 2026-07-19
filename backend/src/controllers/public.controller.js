@@ -127,7 +127,7 @@ async function subscribeNewsletter(req, res) {
 async function unsubscribeNewsletter(req, res) {
   try {
     const { email } = req.body;
-    await pool.query("DELETE FROM newsletters WHERE email = $1", [email]);
+    await pool.query("UPDATE platform_communications SET status = 'UNSUBSCRIBED' WHERE comm_type = 'NEWSLETTER' AND email = $1", [email]);
     return res.json({ message: "Unsubscribed successfully" });
   } catch (err) {
     return res.status(500).json({ message: err.message });

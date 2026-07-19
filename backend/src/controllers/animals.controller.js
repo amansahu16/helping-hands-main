@@ -214,8 +214,8 @@ async function deleteAnimal(req, res) {
       (role === "ngo"  && animal.postedByNgoId  === id);
     if (!isOwner) return res.status(403).json({ message: "Forbidden" });
  
-    await pool.query("DELETE FROM animals WHERE id = $1", [req.params.id]);
-    return res.json({ message: "Animal listing deleted" });
+    await pool.query("UPDATE incidents SET status = 'CANCELLED' WHERE id = $1", [req.params.id]);
+    return res.json({ message: "Animal listing cancelled" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

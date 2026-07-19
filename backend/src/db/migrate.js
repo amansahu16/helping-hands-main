@@ -36,19 +36,14 @@ async function migrate() {
                 process.exit(0);
             }
 
-            console.log(`Dropping existing tables: ${tables.join(", ")}`);
-            for (const table of tables) {
-                await pool.query(`DROP TABLE IF EXISTS "${table}" CASCADE`);
-            }
+            console.log("Dropping existing tables is disabled for database security.");
         } else {
-            console.log("No tables to drop.");
+            console.log("No tables found.");
         }
         
-        // Drop compat schema if exists to start fresh (only when empty or forced)
-        console.log("Dropping existing compatibility schema if any...");
-        await pool.query("DROP SCHEMA IF EXISTS compat CASCADE");
+        console.log("Dropping existing compatibility schema is disabled for database security.");
         
-        // 2. Get all custom user-defined types (enums) in the public schema and drop them
+        // 2. Get all custom user-defined types (enums) in the public schema
         const typesRes = await pool.query(`
             SELECT t.typname 
             FROM pg_type t 
@@ -58,12 +53,9 @@ async function migrate() {
         `);
         const types = typesRes.rows.map(r => r.typname);
         if (types.length > 0) {
-            console.log(`Dropping custom types/enums: ${types.join(", ")}`);
-            for (const type of types) {
-                await pool.query(`DROP TYPE IF EXISTS "${type}" CASCADE`);
-            }
+            console.log("Dropping custom types/enums is disabled for database security.");
         } else {
-            console.log("No custom types/enums to drop.");
+            console.log("No custom types/enums found.");
         }
 
         // 3. Read and execute schema.sql
